@@ -21,6 +21,7 @@ public class ScreenRecorder : IDisposable
 {
     private readonly int _fps;
     private int _screenW, _screenH;
+    private int _screenLeft, _screenTop;      // 主显示器虚拟桌面坐标
     private readonly string _outputDir;
     private readonly IRealTimeEnhancer? _enhancer;
     private readonly IReadOnlyDictionary<string, double>? _enhancerParams;
@@ -47,6 +48,9 @@ public class ScreenRecorder : IDisposable
     {
         _screenW = screenW;
         _screenH = screenH;
+        // GDI 回退坐标：单显示器场景下主显示器左上角即为 (0,0)
+        _screenLeft = 0;
+        _screenTop = 0;
         _outputDir = outputDir;
         _enhancer = enhancer;
         _enhancerParams = enhancerParams;
@@ -125,7 +129,8 @@ public class ScreenRecorder : IDisposable
                     using var bmp = new System.Drawing.Bitmap(_screenW, _screenH,
                         System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                     using var g = System.Drawing.Graphics.FromImage(bmp);
-                    g.CopyFromScreen(0, 0, 0, 0, new System.Drawing.Size(_screenW, _screenH));
+                    g.CopyFromScreen(_screenLeft, _screenTop, 0, 0,
+                        new System.Drawing.Size(_screenW, _screenH));
                     var data = bmp.LockBits(
                         new System.Drawing.Rectangle(0, 0, _screenW, _screenH),
                         System.Drawing.Imaging.ImageLockMode.ReadOnly,

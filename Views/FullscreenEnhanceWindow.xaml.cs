@@ -17,6 +17,11 @@ namespace MediaEnhancer.Views;
 ///   - DXGI Desktop Duplication 优先，GDI 自动回退
 ///   - F11 全局热键安全退出
 ///   - 只依赖 IRealTimeEnhancer 接口，不绑定具体算法
+///
+/// DPI 处理说明：
+///   WPF 窗口的 Width/Height 是设备无关像素（1/96 英寸），必须用
+///   SystemParameters 设置才能正确填充屏幕。捕获端（DXGI/GDI）返回
+///   物理像素，BitmapSource 通过设置正确的显示 DPI 实现 1:1 像素映射。
 /// </summary>
 public partial class FullscreenEnhanceWindow : Window
 {
@@ -45,16 +50,23 @@ public partial class FullscreenEnhanceWindow : Window
 
     private IRealTimeEnhancer? _method;
     private IReadOnlyDictionary<string, double>? _params;
-    private int _screenW, _screenH;
+
+    // ---- 捕获相关（物理像素，Start() 中根据 DPI 修正） ----
+    private int _captureW, _captureH;
+    private int _captureStride;
+    private int _screenLeft, _screenTop;
+
+    // ---- 显示相关 ----
+    private int _windowW, _windowH;             // WPF 窗口逻辑尺寸
+    private double _dpiScaleX, _dpiScaleY;      // 显示 DPI 缩放因子
+    private double _dpiX, _dpiY;                // 实际显示 DPI
+
     private CancellationTokenSource? _cts;
     private HwndSource? _hwndSource;
     private DxgiScreenCapture? _dxgiCapture;
     private bool _useDxgi;
 
-    /// <summary>停止时触发（F11 或外部调用 Stop）。</summary>
     public event Action? Stopped;
-
-    /// <summary>最后发生的错误信息。</summary>
     public string? LastError { get; private set; }
 
     public FullscreenEnhanceWindow()
@@ -62,13 +74,22 @@ public partial class FullscreenEnhanceWindow : Window
         try
         {
             InitializeComponent();
-            _screenW = (int)SystemParameters.PrimaryScreenWidth;
-            _screenH = (int)SystemParameters.PrimaryScreenHeight;
+
+            _windowW = (int)SystemParameters.PrimaryScreenWidth;
+            _windowH = (int)SystemParameters.PrimaryScreenHeight;
+
+            // 构造函数中尚无 DPI 信息，先用逻辑尺寸作为默认值
+            // （Start() 中会根据实际 DPI 修正为物理尺寸）
+            _captureW = _windowW;
+            _captureH = _windowH;
+            _captureStride = _captureW * 4;
+            _screenLeft = 0;
+            _screenTop = 0;
 
             Left = 0;
             Top = 0;
-            Width = _screenW;
-            Height = _screenH;
+            Width = _windowW;
+            Height = _windowH;
 
             SourceInitialized += OnSourceInitialized;
         }
@@ -111,8 +132,6 @@ public partial class FullscreenEnhanceWindow : Window
     /// <summary>
     /// 启动全屏增强。传入任意 IRealTimeEnhancer 实现和参数。
     /// </summary>
-    /// <param name="method">增强算法（如线性拉伸、直方图均衡化等）。</param>
-    /// <param name="parameters">参数字典，键为参数 Key，值为当前设置。</param>
     public void Start(IRealTimeEnhancer method, IReadOnlyDictionary<string, double>? parameters)
     {
         _method = method;
@@ -121,13 +140,31 @@ public partial class FullscreenEnhanceWindow : Window
 
         try
         {
-            // 优先使用 DXGI Desktop Duplication（更快、更省 CPU）
+            // 获取当前显示器的 DPI 缩放因子
+            var dpi = VisualTreeHelper.GetDpi(this);
+            _dpiScaleX = dpi.DpiScaleX;
+            _dpiScaleY = dpi.DpiScaleY;
+            _dpiX = 96.0 * _dpiScaleX;
+            _dpiY = 96.0 * _dpiScaleY;
+
+            // 根据 WPF 逻辑尺寸 × DPI 缩放 = 物理像素
+            // 这比任何 P/Invoke 都可靠，因为直接使用 WPF 自身的 DPI 系统
+            _captureW = (int)(_windowW * _dpiScaleX);
+            _captureH = (int)(_windowH * _dpiScaleY);
+            _captureStride = _captureW * 4;
+            // GDI 回退坐标：单显示器为 (0,0)，多显示器下此值可能需要调整
+            _screenLeft = 0;
+            _screenTop = 0;
+
+            // 优先使用 DXGI Desktop Duplication（更高效）
             _dxgiCapture = new DxgiScreenCapture();
             _useDxgi = _dxgiCapture.Initialize();
             if (_useDxgi)
             {
-                _screenW = _dxgiCapture.Width;
-                _screenH = _dxgiCapture.Height;
+                // DXGI 返回的物理分辨率覆盖计算值（两者应该一致）
+                _captureW = _dxgiCapture.Width;
+                _captureH = _dxgiCapture.Height;
+                _captureStride = _captureW * 4;
             }
 
             Show();
@@ -166,7 +203,6 @@ public partial class FullscreenEnhanceWindow : Window
             await CaptureOneFrame(ct);
             if (ct.IsCancellationRequested) break;
 
-            // 动态间隔：DXGI 目标 ~30 FPS，GDI 目标 ~10 FPS
             int targetMs = _useDxgi ? 33 : 100;
             int delay = Math.Max(10, targetMs - (int)sw.ElapsedMilliseconds);
             try { await Task.Delay(delay, ct); }
@@ -182,25 +218,25 @@ public partial class FullscreenEnhanceWindow : Window
             {
                 try
                 {
+                    int w = _captureW, h = _captureH, stride = _captureStride;
                     byte[]? pixels = null;
-                    int w = _screenW, h = _screenH, stride = _screenW * 4;
 
                     if (_useDxgi)
                     {
-                        // DXGI 捕获（GPU 零拷贝）
                         pixels = _dxgiCapture?.CaptureFrame();
+                        if (pixels != null && pixels.Length > 0)
+                            stride = _captureStride; // DXGI 输出恒为 width*4
                     }
 
-                    if (pixels == null)
+                    if (pixels == null || pixels.Length == 0)
                     {
-                        // GDI 回退
-                        using var bmp = new System.Drawing.Bitmap(
-                            _screenW, _screenH,
+                        // GDI 回退——从主显示器实际坐标捕获物理分辨率画面
+                        using var bmp = new System.Drawing.Bitmap(w, h,
                             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                         using (var g = System.Drawing.Graphics.FromImage(bmp))
-                            g.CopyFromScreen(0, 0, 0, 0,
-                                new System.Drawing.Size(_screenW, _screenH));
+                            g.CopyFromScreen(_screenLeft, _screenTop, 0, 0,
+                                new System.Drawing.Size(w, h));
 
                         var data = bmp.LockBits(
                             new System.Drawing.Rectangle(0, 0, w, h),
@@ -214,11 +250,17 @@ public partial class FullscreenEnhanceWindow : Window
                         bmp.UnlockBits(data);
                     }
 
-                    // 调用可插拔增强方法
+                    if (pixels == null || pixels.Length == 0) return null;
+
+                    // 逐帧增强（操作物理像素）
                     byte[] enhanced = _method!.Enhance(pixels, w, h, stride, _params);
 
+                    // 关键：创建 BitmapSource 时使用显示器物理 DPI
+                    // - 物理分辨率 w×h（如 1920×1080）
+                    // - DPI = 96 × scale（如 150% → 144 DPI）
+                    // WPF 知道此图像应以 144 DPI 渲染 → 1:1 像素映射到屏幕
                     var src = BitmapSource.Create(
-                        w, h, 96, 96, PixelFormats.Bgra32, null, enhanced, stride);
+                        w, h, _dpiX, _dpiY, PixelFormats.Bgra32, null, enhanced, stride);
                     src.Freeze();
                     return src;
                 }

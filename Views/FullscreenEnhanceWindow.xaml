@@ -11,6 +11,6 @@
         ShowActivated="False"
         ResizeMode="NoResize">
     <Grid>
-        <Image x:Name="Display" Stretch="Uniform"/>
+        <Image x:Name="Display" Stretch="Fill"/>
     </Grid>
 </Window>

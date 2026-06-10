@@ -6,7 +6,9 @@
         xmlns:core="clr-namespace:MediaEnhancer.Core"
         mc:Ignorable="d"
         Title="影音智增强管理系统" Height="750" Width="1200"
+        MinHeight="600" MinWidth="960"
         WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
         FontFamily="Microsoft YaHei"
         Background="#F8FAFC">
     <Window.Resources>

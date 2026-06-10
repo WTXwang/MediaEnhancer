@@ -28,6 +28,29 @@ namespace MediaEnhancer
         }
 
         /// <summary>
+        /// 窗口加载后根据屏幕尺寸自适应调整：
+        /// - 若窗口大于屏幕工作区则缩小至 85%
+        /// - 若窗口小于屏幕的 50% 则放大至 65%（适配 4K 屏）
+        /// </summary>
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            var workArea = SystemParameters.WorkArea;
+
+            // 窗口超过工作区时缩小
+            if (Width > workArea.Width || Height > workArea.Height)
+            {
+                Width = Math.Min(Width, workArea.Width * 0.85);
+                Height = Math.Min(Height, workArea.Height * 0.85);
+            }
+            // 在高分辨率屏幕上适当放大
+            else if (Width < workArea.Width * 0.5 && Height < workArea.Height * 0.5)
+            {
+                Width = Math.Min(workArea.Width * 0.65, 1600);
+                Height = Math.Min(workArea.Height * 0.65, 900);
+            }
+        }
+
+        /// <summary>
         /// DataGrid 单元格编辑结束事件，用于收藏复选框变更后同步到数据库。
         /// </summary>
         private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)

@@ -1416,8 +1416,12 @@ namespace MediaEnhancer.ViewModels
             var outputDir = RecordingSavePath;
             Directory.CreateDirectory(outputDir);
 
-            var screenW = (int)SystemParameters.PrimaryScreenWidth;
-            var screenH = (int)SystemParameters.PrimaryScreenHeight;
+            // 使用 WPF 原生 DPI 系统计算物理像素尺寸
+            // SystemParameters 返回 WPF 逻辑像素，乘以 DPI 缩放 = 物理像素
+            var mainWindow = System.Windows.Application.Current.MainWindow;
+            var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(mainWindow);
+            var screenW = (int)(System.Windows.SystemParameters.PrimaryScreenWidth * dpi.DpiScaleX);
+            var screenH = (int)(System.Windows.SystemParameters.PrimaryScreenHeight * dpi.DpiScaleY);
 
             IRealTimeEnhancer? enhancer = EnhancedRecording ? _registry.Current : null;
             IReadOnlyDictionary<string, double>? eParams = null;
