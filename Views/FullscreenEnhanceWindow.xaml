@@ -1,0 +1,16 @@
+<Window x:Class="MediaEnhancer.Views.FullscreenEnhanceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="全屏增强"
+        WindowStyle="None"
+        WindowState="Normal"
+        AllowsTransparency="True"
+        Background="#01000000"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize">
+    <Grid>
+        <Image x:Name="Display" Stretch="Uniform"/>
+    </Grid>
+</Window>

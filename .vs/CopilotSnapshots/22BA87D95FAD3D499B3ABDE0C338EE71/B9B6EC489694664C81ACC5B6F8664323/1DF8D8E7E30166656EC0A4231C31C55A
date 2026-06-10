@@ -1,0 +1,48 @@
+﻿using System.Configuration;
+using System.Data;
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using MediaEnhancer.Data;
+using MediaEnhancer.Services;
+using MediaEnhancer.ViewModels;
+using Microsoft.EntityFrameworkCore;
+
+namespace MediaEnhancer
+{
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App : Application
+    {
+        public static ServiceProvider ServiceProvider { get; private set; }
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+
+            ServiceProvider = serviceCollection.BuildServiceProvider();
+
+            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+        }
+
+        private void ConfigureServices(IServiceCollection services)
+        {
+            // 配置 SQLite 数据库环境
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite("Data Source=MediaEnhancerDb.sqlite"));
+
+            // 注册应用服务
+            services.AddScoped<IDataService, DataService>();
+
+            // 注册 ViewModel
+            services.AddTransient<MainViewModel>();
+
+            // 注册 Window
+            services.AddTransient<MainWindow>();
+        }
+    }
+}

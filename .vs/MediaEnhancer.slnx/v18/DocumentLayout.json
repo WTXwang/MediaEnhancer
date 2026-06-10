@@ -1,0 +1,184 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\vs_repo\\repo1\\MediaEnhancer\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\docs\\\u9879\u76EE\u603B\u7ED3.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:docs\\\u9879\u76EE\u603B\u7ED3.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\models\\playhistory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:models\\playhistory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\models\\favorite.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:models\\favorite.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\models\\mediafile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:models\\mediafile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\models\\recording.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:models\\recording.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\models\\thumbnail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:models\\thumbnail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\mediaenhancer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:mediaenhancer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\core\\booltofavoriteconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:core\\booltofavoriteconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|d:\\vs_repo\\repo1\\mediaenhancer\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E50E4A0-D64B-8D7C-12B3-BF8C661B0DC2}|MediaEnhancer.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "\u9879\u76EE\u603B\u7ED3.md",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Docs\\\u9879\u76EE\u603B\u7ED3.md",
+              "RelativeDocumentMoniker": "Docs\\\u9879\u76EE\u603B\u7ED3.md",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Docs\\\u9879\u76EE\u603B\u7ED3.md",
+              "RelativeToolTip": "Docs\\\u9879\u76EE\u603B\u7ED3.md",
+              "ViewState": "AgIAAKgAAAAAAAAAAAAAALUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-06-08T13:21:31.416Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Thumbnail.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Thumbnail.cs",
+              "RelativeDocumentMoniker": "Models\\Thumbnail.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Thumbnail.cs",
+              "RelativeToolTip": "Models\\Thumbnail.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAUwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T13:12:41.52Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PlayHistory.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\PlayHistory.cs",
+              "RelativeDocumentMoniker": "Models\\PlayHistory.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\PlayHistory.cs",
+              "RelativeToolTip": "Models\\PlayHistory.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAACIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T06:42:33.189Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MediaFile.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\MediaFile.cs",
+              "RelativeDocumentMoniker": "Models\\MediaFile.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\MediaFile.cs",
+              "RelativeToolTip": "Models\\MediaFile.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAuwBoAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T06:44:04.786Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Favorite.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Favorite.cs",
+              "RelativeDocumentMoniker": "Models\\Favorite.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Favorite.cs",
+              "RelativeToolTip": "Models\\Favorite.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAQwAkAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T06:47:02.642Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Recording.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Recording.cs",
+              "RelativeDocumentMoniker": "Models\\Recording.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Models\\Recording.cs",
+              "RelativeToolTip": "Models\\Recording.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T06:42:29.534Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MediaEnhancer.csproj",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\MediaEnhancer.csproj",
+              "RelativeDocumentMoniker": "MediaEnhancer.csproj",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\MediaEnhancer.csproj",
+              "RelativeToolTip": "MediaEnhancer.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-06-08T07:59:11.438Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "MainWindow.xaml",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\MainWindow.xaml",
+              "RelativeToolTip": "MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-08T05:26:56.775Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "BoolToFavoriteConverter.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Core\\BoolToFavoriteConverter.cs",
+              "RelativeDocumentMoniker": "Core\\BoolToFavoriteConverter.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Core\\BoolToFavoriteConverter.cs",
+              "RelativeToolTip": "Core\\BoolToFavoriteConverter.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T06:37:34.275Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "D:\\vs_repo\\repo1\\MediaEnhancer\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
+              "ToolTip": "D:\\vs_repo\\repo1\\MediaEnhancer\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "Data\\AppDbContext.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAwwAYAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T05:35:40.894Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

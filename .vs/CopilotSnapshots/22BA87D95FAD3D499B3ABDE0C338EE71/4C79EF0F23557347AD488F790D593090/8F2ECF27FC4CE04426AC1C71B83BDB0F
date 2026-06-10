@@ -1,0 +1,86 @@
+﻿using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MediaEnhancer.Models;
+using MediaEnhancer.Services;
+
+namespace MediaEnhancer.ViewModels
+{
+    /// <summary>
+    /// 主界面的视图模型，控制着媒体文件的展现和基础交互逻辑。
+    /// </summary>
+    public partial class MainViewModel : ObservableObject
+    {
+        private readonly IDataService _dataService;
+
+        /// <summary>
+        /// 提供给 UI 绑定的媒体文件集合。
+        /// 这是一个可观察集合，当增删元素后，UI 会自动更新。
+        /// </summary>
+        [ObservableProperty]
+        private ObservableCollection<MediaFile> _mediaFilesList = new();
+
+        /// <summary>
+        /// 控制右侧展示哪个面板的索引。
+        /// 0:文件管理, 1:实时增强, 2:屏幕录制, 3:AI总结, 4:系统设置
+        /// </summary>
+        [ObservableProperty]
+        private int _selectedPageIndex = 0;
+
+        /// <summary>
+        /// 构造函数，通过依赖注入获取数据服务。
+        /// </summary>
+        /// <param name="dataService">数据服务接口。</param>
+        public MainViewModel(IDataService dataService)
+        {
+            _dataService = dataService;
+            // 构造时初始化数据加载
+            LoadDataAsync().Wait();
+        }
+
+        /// <summary>
+        /// 从数据库中异步加载所有的媒体文件到 ObservableCollection。
+        /// </summary>
+        private async Task LoadDataAsync()
+        {
+            var data = await _dataService.GetAllMediaFilesAsync();
+            MediaFilesList.Clear();
+            foreach (var item in data)
+            {
+                MediaFilesList.Add(item);
+            }
+        }
+
+        /// <summary>
+        /// 模拟的一个命令：由前台 UI 按钮触发，用于刷新当前列表数据。
+        /// 此处 CommunityToolkit.Mvvm 会利用这个方法自动生成对应的 RefreshCommand 供绑定。
+        /// </summary>
+        [RelayCommand]
+        private async Task Refresh()
+        {
+            await LoadDataAsync();
+        }
+
+        /// <summary>
+        /// 弹窗提示功能未实现。
+        /// </summary>
+        [RelayCommand]
+        private void ShowNotImplementedMsg(string featureName)
+        {
+            System.Windows.MessageBox.Show($"{featureName} 功能暂未实现，敬请期待！", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// 切换页面的命令。
+        /// </summary>
+        [RelayCommand]
+        private void ChangePage(string pageIndexStr)
+        {
+            if (int.TryParse(pageIndexStr, out int index))
+            {
+                SelectedPageIndex = index;
+            }
+        }
+    }
+}
