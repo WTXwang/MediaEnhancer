@@ -31,4 +31,14 @@
     </Content>
   </ItemGroup>
 
+  <!-- FFmpeg 可执行文件 — 若已下载则一并发布，避免用户首次启动等待下载 -->
+  <ItemGroup>
+    <Content Include="ffmpeg.exe" Condition="Exists('ffmpeg.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ffprobe.exe" Condition="Exists('ffprobe.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
