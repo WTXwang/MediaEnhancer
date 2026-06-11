@@ -751,6 +751,13 @@ partial class MainViewModel
         public bool CanStartRecording => !IsRecording && !IsProcessingRecording;
 
         [RelayCommand]
+        private void CancelRecordingEnhancement()
+        {
+            _recorder?.CancelEnhancement();
+            RecordingStatus = "正在取消增强...";
+        }
+
+        [RelayCommand]
         private async Task StopRecording()
         {
             if (_recorder == null) return;

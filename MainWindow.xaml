@@ -613,7 +613,8 @@
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
                                         Visibility="{Binding HasEnhanceProgress, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock Text="{Binding EnhanceProgress}" FontSize="12" Foreground="#7C3AED"
-                                           VerticalAlignment="Center"/>
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="600"/>
                                 <Button Content="取消" Style="{StaticResource DangerButtonStyle}"
                                         Command="{Binding CancelEnhanceCommand}"
                                         Padding="6,2" FontSize="11" Margin="10,0,0,0"/>
@@ -1101,40 +1102,59 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Ellipse Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
-                                                    <Ellipse.Style>
-                                                        <Style TargetType="Ellipse">
-                                                            <Setter Property="Fill" Value="#94A3B8"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsRecording}" Value="True">
-                                                                    <Setter Property="Fill" Value="#EF4444"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Ellipse.Style>
-                                                </Ellipse>
-                                                <TextBlock VerticalAlignment="Center">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Text" Value="{Binding RecordingStatus}"/>
-                                                            <Setter Property="FontSize" Value="13"/>
-                                                            <Setter Property="Foreground" Value="#475569"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsRecording}" Value="True">
-                                                                    <Setter Property="Foreground" Value="#7F1D1D"/>
-                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <TextBlock Text="{Binding RecordingDuration}"
-                                                           FontSize="16" FontWeight="Bold"
-                                                           Foreground="#DC2626"
-                                                           VerticalAlignment="Center" Margin="8,0,0,0"
-                                                           Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                            </StackPanel>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- 第一行：状态文本 -->
+                                                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                    <Ellipse Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                        <Ellipse.Style>
+                                                            <Style TargetType="Ellipse">
+                                                                <Setter Property="Fill" Value="#94A3B8"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                                                        <Setter Property="Fill" Value="#EF4444"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Ellipse.Style>
+                                                    </Ellipse>
+                                                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="{Binding RecordingStatus}"/>
+                                                                <Setter Property="FontSize" Value="13"/>
+                                                                <Setter Property="Foreground" Value="#475569"/>
+                                                                <Setter Property="MaxWidth" Value="280"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#7F1D1D"/>
+                                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <!-- 第二行：时长 / 取消按钮 -->
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding RecordingDuration}"
+                                                               FontSize="16" FontWeight="Bold"
+                                                               Foreground="#DC2626"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                    <Button Content="✕ 取消增强"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding CancelRecordingEnhancementCommand}"
+                                                            Padding="6,2" FontSize="11" Height="24"
+                                                            VerticalAlignment="Center"
+                                                            Visibility="{Binding IsProcessingRecording, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                </StackPanel>
+                                            </Grid>
                                         </Border>
 
                                         <!-- 录制按钮 -->

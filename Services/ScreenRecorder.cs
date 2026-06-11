@@ -28,6 +28,7 @@ public class ScreenRecorder : IDisposable
     private readonly IReadOnlyDictionary<string, double>? _enhancerParams;
 
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _enhanceCts;
     private Task? _recordingTask;
     private string? _framesDir;
     private DateTime _startTime;
@@ -96,13 +97,18 @@ public class ScreenRecorder : IDisposable
         {
             try
             {
-                var enhanceCts = new CancellationTokenSource();
-                await Task.Run(() => EnhanceFrames(_framesDir, enhanceCts.Token, status));
+                _enhanceCts = new CancellationTokenSource();
+                await Task.Run(() => EnhanceFrames(_framesDir, _enhanceCts.Token, status));
             }
             catch (Exception ex)
             {
                 _errorMsg = $"逐帧增强失败: {ex.Message}";
-                return _framesDir; // 返回原始帧目录
+                // 即使增强失败也继续编码（使用原始帧）
+            }
+            finally
+            {
+                _enhanceCts?.Dispose();
+                _enhanceCts = null;
             }
         }
 
@@ -326,6 +332,14 @@ public class ScreenRecorder : IDisposable
             Marshal.Copy(pixels, y * stride, data.Scan0 + y * data.Stride, data.Stride);
         bmp.UnlockBits(data);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+    }
+
+    /// <summary>
+    /// 取消后处理增强（录制已停止，仅中断逐帧增强环节，直接进入编码）。
+    /// </summary>
+    public void CancelEnhancement()
+    {
+        _enhanceCts?.Cancel();
     }
 
     public void Dispose()
