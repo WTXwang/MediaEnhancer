@@ -56,6 +56,18 @@ namespace MediaEnhancer.Models
         public string? Duration { get; set; }
 
         /// <summary>
+        /// 增强来源文件 ID（由哪个文件增强生成，null 表示原始文件）。
+        /// 与自身形成自引用关系，用于追溯文件增强历史。
+        /// </summary>
+        public int? SourceFileId { get; set; }
+
+        /// <summary>
+        /// 导航属性：增强来源文件。
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(SourceFileId))]
+        public MediaFile? SourceFile { get; set; }
+
+        /// <summary>
         /// 获取或设置该媒体文件是否已被用户收藏。
         /// </summary>
         public bool IsFavorite { get; set; }

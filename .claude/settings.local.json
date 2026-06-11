@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(xargs wc -l)",
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Bash(rm -rf \"d:/vs_repo/repo1/MediaEnhancer/Tests\")",
+      "Bash(dotnet new *)"
     ]
   }
 }

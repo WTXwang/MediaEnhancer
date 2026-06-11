@@ -193,7 +193,9 @@ namespace MediaEnhancer.Core
                     int idx = i + c;
                     double pixel = (result[idx] - minVal) * scale * contrast + brightness;
                     pixel = Math.Max(0, Math.Min(255, pixel));
-                    result[idx] = (byte)Math.Round(pixel);
+                    // (byte)(pixel + 0.5) 是标准的四舍五入，避免 Math.Round 默认的
+                    // 银行家舍入（中点值舍入到偶数）造成像素值偏差。
+                    result[idx] = (byte)(pixel + 0.5);
                 }
                 // Alpha 通道（idx = i+3）保持不变
             }
@@ -258,7 +260,7 @@ namespace MediaEnhancer.Core
                             for (int c = 0; c < 3; c++)
                             {
                                 var v = (row[x + c] - minVal) / range * 255f * contrast + brightness;
-                                row[x + c] = (byte)Math.Max(0, Math.Min(255, Math.Round(v)));
+                                row[x + c] = (byte)Math.Max(0, Math.Min(255, (float)(v + 0.5)));
                             }
                         }
                     }

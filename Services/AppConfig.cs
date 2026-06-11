@@ -16,7 +16,13 @@ public static class AppConfig
         try
         {
             if (File.Exists(Path))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path)) ?? new();
+            {
+                var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path)) ?? new();
+                // 解密 API 密钥供内存使用（磁盘上始终是密文）
+                s.ChatKey = SecureStorage.Unprotect(s.ChatKey);
+                s.EditKey = SecureStorage.Unprotect(s.EditKey);
+                return s;
+            }
         }
         catch { }
         return new AppSettings();
@@ -24,7 +30,25 @@ public static class AppConfig
 
     public static void Save(AppSettings s)
     {
-        try { File.WriteAllText(Path, JsonSerializer.Serialize(s)); } catch { }
+        try
+        {
+            // 加密 API 密钥后再序列化到磁盘
+            var toSave = new AppSettings
+            {
+                ChatEndpoint = s.ChatEndpoint,
+                ChatKey = SecureStorage.Protect(s.ChatKey),
+                ChatModel = s.ChatModel,
+                EditEndpoint = s.EditEndpoint,
+                EditKey = SecureStorage.Protect(s.EditKey),
+                EditModel = s.EditModel,
+                EditFormat = s.EditFormat,
+                RecordingPath = s.RecordingPath,
+                EnhancementPath = s.EnhancementPath,
+                ThumbnailPath = s.ThumbnailPath
+            };
+            File.WriteAllText(Path, JsonSerializer.Serialize(toSave));
+        }
+        catch { }
     }
 }
 

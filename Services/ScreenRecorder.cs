@@ -48,9 +48,10 @@ public class ScreenRecorder : IDisposable
     {
         _screenW = screenW;
         _screenH = screenH;
-        // GDI 回退坐标：单显示器场景下主显示器左上角即为 (0,0)
-        _screenLeft = 0;
-        _screenTop = 0;
+        // 使用主显示器在虚拟桌面中的实际坐标（多显示器下原点可能不为 (0,0)）
+        var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
+        _screenLeft = primaryScreen.Bounds.X;
+        _screenTop = primaryScreen.Bounds.Y;
         _outputDir = outputDir;
         _enhancer = enhancer;
         _enhancerParams = enhancerParams;
@@ -94,7 +95,7 @@ public class ScreenRecorder : IDisposable
 
         if (await TryFfmpegAsync(_framesDir, mp4Path, realFps))
         {
-            // try { Directory.Delete(_framesDir, true); } catch { }
+            try { Directory.Delete(_framesDir, true); } catch { }
             OutputPath = mp4Path;
             return mp4Path;
         }

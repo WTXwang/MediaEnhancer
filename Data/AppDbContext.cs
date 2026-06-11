@@ -11,10 +11,44 @@ namespace MediaEnhancer.Data
         /// <summary>
         /// 提供给外部注入数据库连接配置的构造函数。
         /// </summary>
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        private readonly bool _autoMigrate;
+
+        /// <summary>
+        /// 提供给外部注入数据库连接配置的构造函数。
+        /// </summary>
+        public AppDbContext(DbContextOptions<AppDbContext> options, bool autoMigrate = true) : base(options)
         {
-            // 确保数据库被创建，如果没有则自动创建（供开发使用）
-            Database.EnsureCreated();
+            _autoMigrate = autoMigrate;
+            if (!autoMigrate) return;
+
+            // 优先使用 EF Core 迁移（支持增量 schema 变更）。
+            // 如果迁移文件尚未创建（如首次运行），回退到 EnsureCreated。
+            // 如果数据库已由 EnsureCreated 创建，则补录迁移历史使后续 Migrate() 正常工作。
+            try
+            {
+                Database.Migrate();
+            }
+            catch (InvalidOperationException)
+            {
+                Database.EnsureCreated();
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("already exists"))
+            {
+                // EnsureCreated 遗留数据库：表已存在但无迁移历史。
+                // 补录 InitialCreate 迁移记录，使后续 Migrate() 能正常增量更新。
+                try
+                {
+                    Database.ExecuteSqlRaw(
+                        "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (" +
+                        "\"MigrationId\" TEXT NOT NULL CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY," +
+                        "\"ProductVersion\" TEXT NOT NULL);");
+
+                    Database.ExecuteSqlRaw(
+                        "INSERT OR IGNORE INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
+                        "VALUES ('20260610125846_InitialCreate', '10.0.0');");
+                }
+                catch { }
+            }
         }
 
         /// <summary>
@@ -58,6 +92,13 @@ namespace MediaEnhancer.Data
             modelBuilder.Entity<MediaFile>()
                 .HasIndex(m => m.FilePath)
                 .IsUnique();
+
+            // MediaFile 自引用：增强文件 → 源文件（SourceFileId 可为 null）
+            modelBuilder.Entity<MediaFile>()
+                .HasOne(m => m.SourceFile)
+                .WithMany()
+                .HasForeignKey(m => m.SourceFileId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // PlayHistory → MediaFile 多对一关系
             modelBuilder.Entity<PlayHistory>()

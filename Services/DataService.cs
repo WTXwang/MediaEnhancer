@@ -140,6 +140,39 @@ namespace MediaEnhancer.Services
             {
                 file.IsFavorite = !file.IsFavorite;
                 await _context.SaveChangesAsync();
+                await SyncFavoriteRecordAsync(id, file.IsFavorite);
+            }
+        }
+
+        /// <summary>
+        /// 根据 IsFavorite 状态同步 Favorites 表：收藏时新增记录，取消时删除记录。
+        /// 供批量收藏操作等场景直接调用。
+        /// </summary>
+        public async Task SyncFavoriteRecordAsync(int mediaFileId, bool isFavorite)
+        {
+            if (isFavorite)
+            {
+                var exists = await _context.Favorites
+                    .AnyAsync(f => f.MediaFileId == mediaFileId);
+                if (!exists)
+                {
+                    await _context.Favorites.AddAsync(new Favorite
+                    {
+                        MediaFileId = mediaFileId,
+                        CreatedAt = DateTime.Now
+                    });
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                var record = await _context.Favorites
+                    .FirstOrDefaultAsync(f => f.MediaFileId == mediaFileId);
+                if (record != null)
+                {
+                    _context.Favorites.Remove(record);
+                    await _context.SaveChangesAsync();
+                }
             }
         }
 
@@ -163,28 +196,17 @@ namespace MediaEnhancer.Services
         /// <inheritdoc/>
         public async Task<List<PlayHistory>> GetRecentPlaysAsync(int count = 10)
         {
-            // 子查询：对每个 MediaFileId 取最近的播放时间
-            var latestPlayTimes = await _context.PlayHistories
-                .GroupBy(p => p.MediaFileId)
-                .Select(g => new { MediaFileId = g.Key, LatestTime = g.Max(p => p.PlayedAt) })
+            // 单条 SQL：用关联子查询找出每个文件的最近播放，再取 top N
+            var latestPlays = await _context.PlayHistories
+                .Include(p => p.MediaFile)
+                .Where(p => p.PlayedAt == _context.PlayHistories
+                    .Where(x => x.MediaFileId == p.MediaFileId)
+                    .Max(x => (DateTime?)x.PlayedAt))
+                .OrderByDescending(p => p.PlayedAt)
+                .Take(count)
                 .ToListAsync();
 
-            if (latestPlayTimes.Count == 0)
-                return new List<PlayHistory>();
-
-            // 根据最新时间查出完整记录（含导航属性），取前 N 条
-            var result = new List<PlayHistory>();
-            foreach (var item in latestPlayTimes.OrderByDescending(x => x.LatestTime).Take(count))
-            {
-                var play = await _context.PlayHistories
-                    .Include(p => p.MediaFile)
-                    .FirstOrDefaultAsync(p => p.MediaFileId == item.MediaFileId
-                                           && p.PlayedAt == item.LatestTime);
-                if (play != null)
-                    result.Add(play);
-            }
-
-            return result;
+            return latestPlays;
         }
 
         // ============================================================

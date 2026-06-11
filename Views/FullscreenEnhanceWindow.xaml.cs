@@ -83,8 +83,10 @@ public partial class FullscreenEnhanceWindow : Window
             _captureW = _windowW;
             _captureH = _windowH;
             _captureStride = _captureW * 4;
-            _screenLeft = 0;
-            _screenTop = 0;
+            // 获取主显示器在虚拟桌面中的实际坐标（多显示器下不一定为原点）
+            var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
+            _screenLeft = primaryScreen.Bounds.X;
+            _screenTop = primaryScreen.Bounds.Y;
 
             Left = 0;
             Top = 0;
@@ -152,9 +154,10 @@ public partial class FullscreenEnhanceWindow : Window
             _captureW = (int)(_windowW * _dpiScaleX);
             _captureH = (int)(_windowH * _dpiScaleY);
             _captureStride = _captureW * 4;
-            // GDI 回退坐标：单显示器为 (0,0)，多显示器下此值可能需要调整
-            _screenLeft = 0;
-            _screenTop = 0;
+            // 使用主显示器在虚拟桌面中的实际坐标（多显示器下非主屏可能为负值）
+            var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
+            _screenLeft = primaryScreen.Bounds.X;
+            _screenTop = primaryScreen.Bounds.Y;
 
             // 优先使用 DXGI Desktop Duplication（更高效）
             _dxgiCapture = new DxgiScreenCapture();

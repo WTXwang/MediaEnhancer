@@ -66,25 +66,37 @@ namespace MediaEnhancer.ViewModels
             _thumbnailService.CacheDirectory = _thumbnailSavePath;
             UpdateChatConfig();
 
-            // 构造时初始化加载媒体文件列表、统计数据、最近播放和预设
-            LoadDataAsync().Wait();
-            LoadStatisticsAsync().Wait();
-            LoadRecordingsAsync().Wait();
-            LoadRecentPlaysAsync().Wait();
+            // 构造时初始化加载。通过 Task.Run 将异步操作调度到线程池，
+            // 避免在 UI 线程上 .Wait() 触发 SynchronizationContext 死锁。
+            Task.Run(async () =>
+            {
+                await LoadDataAsync();
+                await LoadStatisticsAsync();
+                await LoadRecordingsAsync();
+                await LoadRecentPlaysAsync();
+            }).GetAwaiter().GetResult();
         }
+
+        // 用于取消上一次搜索/筛选的异步加载，防止快速连续输入时旧结果覆盖新结果
+        private CancellationTokenSource? _loadCts;
 
         /// <summary>
         /// 从数据库中异步加载媒体文件到 ObservableCollection。
         /// 根据当前搜索关键词、类型筛选和收藏状态进行过滤。
         /// </summary>
-        private async Task LoadDataAsync()
+        /// <param name="ct">取消令牌，用于中断已过期的加载请求。</param>
+        private async Task LoadDataAsync(CancellationToken ct = default)
         {
             var keyword = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText;
             var type = FilterType == "全部" ? null : FilterType;
             bool? favoritesOnly = FilterFavoritesOnly ? true : null;
 
             var data = await _dataService.SearchMediaFilesAsync(keyword, type, favoritesOnly);
+            if (ct.IsCancellationRequested) return;
+
             _playCountMap = await _dataService.GetPlayCountsAsync();
+            if (ct.IsCancellationRequested) return;
+
             foreach (var item in data)
             {
                 _playCountMap.TryGetValue(item.Id, out var count);
@@ -103,7 +115,7 @@ namespace MediaEnhancer.ViewModels
 
         /// <summary>
         /// 控制右侧展示哪个面板的索引。
-        /// 0:数据统计, 1:文件管理, 2:实时增强, 3:屏幕录制, 4:AI对话, 5:AI编辑, 6:系统设置
+        /// 0:数据统计, 1:文件管理, 2:离线增强, 3:实时增强, 4:屏幕录制, 5:AI对话, 6:AI编辑, 7:系统设置
         /// </summary>
         [ObservableProperty]
         private int _selectedPageIndex = 0;
@@ -196,7 +208,7 @@ namespace MediaEnhancer.ViewModels
         /// <summary>
         /// 搜索文本变化时自动刷新列表。
         /// </summary>
-        partial void OnSearchTextChanged(string value) => _ = LoadDataAsync();
+        partial void OnSearchTextChanged(string value) => LoadWithCancel();
 
         /// <summary>
         /// 当前选中的类型筛选条件。
@@ -207,7 +219,7 @@ namespace MediaEnhancer.ViewModels
         /// <summary>
         /// 类型筛选变化时自动刷新列表。
         /// </summary>
-        partial void OnFilterTypeChanged(string value) => _ = LoadDataAsync();
+        partial void OnFilterTypeChanged(string value) => LoadWithCancel();
 
         /// <summary>
         /// 是否只显示收藏的文件。
@@ -218,7 +230,19 @@ namespace MediaEnhancer.ViewModels
         /// <summary>
         /// 收藏筛选变化时自动刷新列表。
         /// </summary>
-        partial void OnFilterFavoritesOnlyChanged(bool value) => _ = LoadDataAsync();
+        partial void OnFilterFavoritesOnlyChanged(bool value) => LoadWithCancel();
+
+        /// <summary>
+        /// 取消上一个未完成的加载请求，然后启动新的加载。
+        /// 防止快速连续输入/切换筛选时旧结果覆盖新结果。
+        /// </summary>
+        private void LoadWithCancel()
+        {
+            _loadCts?.Cancel();
+            _loadCts?.Dispose();
+            _loadCts = new CancellationTokenSource();
+            _ = LoadDataAsync(_loadCts.Token);
+        }
 
         // 按播放次数排序功能已移除 UI 开关，预留内部使用
 
@@ -436,8 +460,9 @@ namespace MediaEnhancer.ViewModels
         private async Task ToggleFavorite(MediaFile? file)
         {
             if (file == null) return;
-            // CheckBox 已更新本地 IsFavorite，直接持久化
+            // CheckBox 已更新本地 IsFavorite，持久化并同步 Favorites 表
             await _dataService.UpdateMediaFileAsync(file);
+            await _dataService.SyncFavoriteRecordAsync(file.Id, file.IsFavorite);
             await LoadDataAsync();
             // 重新选中同 ID 的文件（保持详情面板不消失）
             SelectedFile = MediaFilesList.FirstOrDefault(f => f.Id == file.Id);
@@ -746,10 +771,13 @@ namespace MediaEnhancer.ViewModels
         {
             var files = SelectedFiles.ToList();
             if (files.Count == 0) return;
+            // 多数决定：未收藏的多 → 全部收藏，已收藏的多 → 全部取消
+            bool targetState = files.Count(f => !f.IsFavorite) >= files.Count(f => f.IsFavorite);
             foreach (var file in files)
             {
-                file.IsFavorite = !file.IsFavorite;
+                file.IsFavorite = targetState;
                 await _dataService.UpdateMediaFileAsync(file);
+                await _dataService.SyncFavoriteRecordAsync(file.Id, file.IsFavorite);
             }
             await LoadDataAsync();
             await LoadStatisticsAsync();
@@ -872,7 +900,12 @@ namespace MediaEnhancer.ViewModels
                     bitmap.EndInit();
                     bitmap.Freeze();
 
-                    var enhanced = LinearStretch.Enhance(bitmap);
+                    BitmapSource enhanced;
+                    var offlineMethod = GetSelectedOfflineMethod();
+                    if (offlineMethod is IOnnxEnhancement onnx)
+                        enhanced = await onnx.EnhanceAsync(bitmap);
+                    else
+                        enhanced = LinearStretch.Enhance(bitmap);
 
                     var fileName = $"enhanced_{file.Id}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
                     var filePath = System.IO.Path.Combine(saveDir, fileName);
@@ -893,6 +926,7 @@ namespace MediaEnhancer.ViewModels
                         FileFormat = ".jpg",
                         FileSize = info.Length,
                         Description = $"由「{file.Title}」增强生成",
+                        SourceFileId = file.Id,
                         IsFavorite = false,
                         DateAdded = DateTime.Now,
                         DateModified = info.LastWriteTime
@@ -963,1181 +997,6 @@ namespace MediaEnhancer.ViewModels
                 System.Windows.MessageBox.Show($"清空缓存失败：{ex.Message}",
                     "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        // ============================================================
-        // 实时增强面板
-        // ============================================================
-
-        /// <summary>
-        /// 当前选中的增强方法名称。
-        /// </summary>
-        [ObservableProperty]
-        private string _selectedMethod = "线性拉伸";
-
-        /// <summary>
-        /// 当前是否选择了线性拉伸（控制参数区的显隐）。
-        /// </summary>
-        public bool IsLinearStretchSelected => _selectedMethod == "线性拉伸";
-
-        partial void OnSelectedMethodChanged(string value)
-        {
-            _registry.SetCurrent(value);
-            OnPropertyChanged(nameof(IsLinearStretchSelected));
-            // 刷新增强预览
-            if (OriginalPreview != null)
-                EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
-        }
-
-        /// <summary>
-        /// 是否开启实时增强。
-        /// </summary>
-        [ObservableProperty]
-        private bool _isEnhancementEnabled = false;
-
-        /// <summary>
-        /// 可用的增强方法列表（从注册中心动态获取）。
-        /// </summary>
-        public List<string> EnhancementMethods => _registry.MethodNames.ToList();
-
-        /// <summary>
-        /// 线性拉伸算法实例（C# 原生实现）。
-        /// </summary>
-        public LinearStretchMethod LinearStretch { get; } = new();
-
-        /// <summary>
-        /// 原始预览图的 BitmapSource。
-        /// </summary>
-        [ObservableProperty]
-        private BitmapSource? _originalPreview = null;
-
-        /// <summary>
-        /// 增强后的预览图的 BitmapSource。
-        /// </summary>
-        [ObservableProperty]
-        private BitmapSource? _enhancedPreview = null;
-
-        /// <summary>
-        /// 是否已有增强预览图（控制对比区域的显隐）。
-        /// </summary>
-        public bool HasPreview => EnhancedPreview != null;
-
-        /// <summary>
-        /// 开启/关闭实时增强（旧版内嵌预览，保留向后兼容）。
-        /// </summary>
-        [RelayCommand]
-        private void ToggleEnhancement()
-        {
-            IsEnhancementEnabled = !IsEnhancementEnabled;
-            if (IsEnhancementEnabled)
-            {
-                if (OriginalPreview != null)
-                {
-                    EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
-                }
-            }
-        }
-
-        // ============================================================
-        // 全屏实时增强
-        // ============================================================
-
-        private Views.FullscreenEnhanceWindow? _fullscreenWindow;
-
-        /// <summary>
-        /// 启动全屏实时增强——以透明覆盖窗口形式增强整个屏幕画面。
-        /// </summary>
-        [RelayCommand]
-        private void StartFullscreenEnhance()
-        {
-            if (_fullscreenWindow != null) return;
-
-            var method = _registry.Current;
-            if (method == null)
-            {
-                System.Windows.MessageBox.Show("没有可用的增强方法，请先在设置中注册。",
-                    "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            try
-            {
-                _fullscreenWindow?.Close();
-                _fullscreenWindow = new Views.FullscreenEnhanceWindow();
-                _fullscreenWindow.Stopped += OnFullscreenStopped;
-
-                // 从当前参数构建参数字典
-                var parameters = new Dictionary<string, double>();
-                foreach (var p in LinearStretch.Parameters)
-                    parameters[p.Key] = p.Value;
-
-                _fullscreenWindow.Start(method, parameters);
-
-                if (_fullscreenWindow.LastError != null)
-                {
-                    System.Windows.MessageBox.Show(
-                        $"全屏增强启动失败：{_fullscreenWindow.LastError}",
-                        "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    _fullscreenWindow.Close();
-                    _fullscreenWindow = null;
-                    return;
-                }
-
-                IsEnhancementEnabled = true;
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(
-                    $"全屏增强启动失败：{ex.Message}",
-                    "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                _fullscreenWindow?.Close();
-                _fullscreenWindow = null;
-            }
-        }
-
-        private void OnFullscreenStopped()
-        {
-            _fullscreenWindow = null;
-            IsEnhancementEnabled = false;
-        }
-
-        /// <summary>
-        /// 手动停止全屏增强。
-        /// </summary>
-        [RelayCommand]
-        private void StopFullscreenEnhance()
-        {
-            var w = _fullscreenWindow;
-            if (w == null) return;
-            w.Stopped -= OnFullscreenStopped;
-            w.Stop();
-            w.Close();
-            OnFullscreenStopped();
-        }
-
-        /// <summary>
-        /// 选择并预览增强效果。
-        /// </summary>
-        [RelayCommand]
-        private async Task PreviewEnhancement()
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog();
-            dialog.Title = "选择一张图片进行增强预览";
-            dialog.Filter = "图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp";
-            if (dialog.ShowDialog() != true) return;
-
-            try
-            {
-                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(dialog.FileName);
-                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                OriginalPreview = bitmap;
-                EnhancedPreview = LinearStretch.Enhance(bitmap);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"加载图片失败：{ex.Message}",
-                    "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 重置增强参数到默认值并刷新预览。
-        /// </summary>
-        [RelayCommand]
-        private void ResetEnhancement()
-        {
-            LinearStretch.Contrast = 1.0;
-            LinearStretch.Brightness = 0;
-            if (OriginalPreview != null)
-                EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
-        }
-
-        /// <summary>增强进度文本。</summary>
-        [ObservableProperty]
-        private string _enhanceProgress = "";
-        public bool HasEnhanceProgress => !string.IsNullOrEmpty(EnhanceProgress);
-        partial void OnEnhanceProgressChanged(string value) => OnPropertyChanged(nameof(HasEnhanceProgress));
-
-        /// <summary>是否正在增强（禁止并发）。</summary>
-        [ObservableProperty]
-        private bool _isEnhancing = false;
-
-        private CancellationTokenSource? _enhanceCts;
-
-        [RelayCommand]
-        private void CancelEnhance()
-        {
-            _enhanceCts?.Cancel();
-            EnhanceProgress = "已取消";
-        }
-
-        [RelayCommand]
-        private async Task EnhanceFile(MediaFile? file)
-        {
-            if (file == null) return;
-
-            if (file.Type == "视频")
-            {
-                if (_isEnhancing)
-                {
-                    MessageBox.Show("已有视频正在增强，请等待完成或取消。", "提示",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (!File.Exists(file.FilePath))
-                {
-                    MessageBox.Show("源文件不存在。", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                IsEnhancing = true;
-                _enhanceCts = new CancellationTokenSource();
-
-                try
-                {
-                    var enhancer = new VideoEnhancer(LinearStretch);
-                    var saveDir = EnhancementSavePath;
-                    Directory.CreateDirectory(saveDir);
-
-                    EnhanceProgress = "正在增强视频...";
-                    var progress = new Progress<(int current, int total)>(p =>
-                        EnhanceProgress = $"正在增强视频... {p.current}/{p.total} 帧");
-
-                    var outputPath = await enhancer.EnhanceAsync(file.FilePath, saveDir, progress,
-                        _enhanceCts.Token);
-
-                    if (_enhanceCts.IsCancellationRequested)
-                    {
-                        EnhanceProgress = "";
-                        return;
-                    }
-
-                    EnhanceProgress = "";
-
-                    if (outputPath == null)
-                    {
-                        MessageBox.Show("视频增强失败，请确保 ffmpeg.exe 已下载。",
-                            "增强失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-
-                    var info = new FileInfo(outputPath);
-                    var newFile = new MediaFile
-                    {
-                        Title = Path.GetFileNameWithoutExtension(outputPath),
-                        FilePath = outputPath,
-                        Type = "视频",
-                        FileFormat = ".mp4",
-                        FileSize = info.Length,
-                        Description = $"由「{file.Title}」增强生成",
-                        IsFavorite = false,
-                        DateAdded = DateTime.Now,
-                        DateModified = DateTime.Now
-                    };
-                    await _dataService.AddMediaFileAsync(newFile);
-                    try { await _dataService.AddEnhancementLogAsync(new EnhancementLog { MediaFileId = file.Id, MethodName = "线性拉伸", OutputPath = outputPath, CreatedAt = DateTime.Now }); } catch { }
-                    await LoadDataAsync();
-                    await LoadStatisticsAsync();
-
-                    MessageBox.Show($"视频增强完成！\n已保存并入库。\n{outputPath}",
-                        "增强成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                finally
-                {
-                    IsEnhancing = false;
-                    _enhanceCts?.Dispose();
-                    _enhanceCts = null;
-                }
-                return;
-            }
-
-            if (file.Type != "图片")
-            {
-                MessageBox.Show("当前仅支持图片和视频文件的增强。",
-                    "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 图片增强（原有逻辑）
-            try
-            {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(file.FilePath);
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                var enhanced = LinearStretch.Enhance(bitmap);
-
-                var saveDir = EnhancementSavePath;
-                Directory.CreateDirectory(saveDir);
-                var fileName = $"enhanced_{file.Id}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
-                var filePath = Path.Combine(saveDir, fileName);
-
-                var encoder = new JpegBitmapEncoder { QualityLevel = 92 };
-                encoder.Frames.Add(BitmapFrame.Create(enhanced));
-                using var stream = new FileStream(filePath, FileMode.Create);
-                encoder.Save(stream);
-
-                var newFile = new MediaFile
-                {
-                    Title = Path.GetFileNameWithoutExtension(fileName),
-                    FilePath = filePath,
-                    Type = "图片",
-                    FileFormat = ".jpg",
-                    FileSize = new FileInfo(filePath).Length,
-                    Description = $"由「{file.Title}」增强生成",
-                    IsFavorite = false,
-                    DateAdded = DateTime.Now,
-                    DateModified = DateTime.Now
-                };
-                await _dataService.AddMediaFileAsync(newFile);
-                try { await GenerateThumbnailForFileAsync(newFile); } catch { }
-                try { await _dataService.AddEnhancementLogAsync(new EnhancementLog { MediaFileId = file.Id, MethodName = "线性拉伸", OutputPath = filePath, CreatedAt = DateTime.Now }); } catch { }
-                await LoadDataAsync();
-
-                MessageBox.Show($"增强完成！\n已保存并导入到影音库。\n{filePath}",
-                    "增强成功", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"增强失败：{ex.Message}",
-                    "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 导出增强后的图像到文件。
-        /// </summary>
-        [RelayCommand]
-        private async Task ExportEnhanced()
-        {
-            if (EnhancedPreview == null)
-            {
-                System.Windows.MessageBox.Show("请先生成增强预览图。",
-                    "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var saveDir = EnhancementSavePath;
-            System.IO.Directory.CreateDirectory(saveDir);
-            var fileName = $"enhanced_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
-            var filePath = System.IO.Path.Combine(saveDir, fileName);
-
-            try
-            {
-                var encoder = new System.Windows.Media.Imaging.JpegBitmapEncoder();
-                encoder.QualityLevel = 92;
-                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(EnhancedPreview));
-                using var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create);
-                encoder.Save(stream);
-
-                // 自动导入影音库
-                var info = new System.IO.FileInfo(filePath);
-                var newFile = new Models.MediaFile
-                {
-                    Title = System.IO.Path.GetFileNameWithoutExtension(fileName),
-                    FilePath = filePath,
-                    Type = "图片",
-                    FileFormat = ".jpg",
-                    FileSize = info.Length,
-                    Description = "增强图片",
-                    IsFavorite = false,
-                    DateAdded = DateTime.Now,
-                    DateModified = info.LastWriteTime
-                };
-                await _dataService.AddMediaFileAsync(newFile);
-
-                // 生成缩略图
-                try { await GenerateThumbnailForFileAsync(newFile); } catch { }
-
-                await LoadDataAsync();
-
-                System.Windows.MessageBox.Show($"增强图片已保存并导入影音库：\n{filePath}",
-                    "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"导出失败：{ex.Message}",
-                    "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // ============================================================
-        // 屏幕录制面板
-        // ============================================================
-
-        private ScreenRecorder? _recorder;
-
-        /// <summary>
-        /// 录制历史列表。
-        /// </summary>
-        [ObservableProperty]
-        private ObservableCollection<Recording> _recordings = new();
-
-        // 录制来源仅全屏（窗口/自定义区域留待未来版本）
-
-        /// <summary>
-        /// 是否正在录制中。
-        /// </summary>
-        [ObservableProperty]
-        private bool _isRecording = false;
-
-        /// <summary>
-        /// 录制时长显示文本。
-        /// </summary>
-        [ObservableProperty]
-        private string _recordingDuration = "00:00";
-
-        /// <summary>
-        /// 录制状态文本。
-        /// </summary>
-        [ObservableProperty]
-        private string _recordingStatus = "就绪";
-
-        /// <summary>
-        /// 是否启用增强录制（录制时同步增强画面）。
-        /// </summary>
-        [ObservableProperty]
-        private bool _enhancedRecording = true;
-
-        [RelayCommand]
-        private void StartRecording()
-        {
-            if (_recorder?.IsRecording == true) return;
-
-            var outputDir = RecordingSavePath;
-            Directory.CreateDirectory(outputDir);
-
-            // 使用 WPF 原生 DPI 系统计算物理像素尺寸
-            // SystemParameters 返回 WPF 逻辑像素，乘以 DPI 缩放 = 物理像素
-            var mainWindow = System.Windows.Application.Current.MainWindow;
-            var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(mainWindow);
-            var screenW = (int)(System.Windows.SystemParameters.PrimaryScreenWidth * dpi.DpiScaleX);
-            var screenH = (int)(System.Windows.SystemParameters.PrimaryScreenHeight * dpi.DpiScaleY);
-
-            IRealTimeEnhancer? enhancer = EnhancedRecording ? _registry.Current : null;
-            IReadOnlyDictionary<string, double>? eParams = null;
-            if (enhancer != null)
-            {
-                var dict = new Dictionary<string, double>();
-                foreach (var p in LinearStretch.Parameters) dict[p.Key] = p.Value;
-                eParams = dict;
-            }
-
-            _recorder = new ScreenRecorder(screenW, screenH, outputDir,
-                enhancer, eParams, fps: 15);
-
-            _recorder.Start();
-
-            if (_recorder.LastError != null)
-            {
-                RecordingStatus = $"启动失败: {_recorder.LastError}";
-                _recorder.Dispose(); _recorder = null;
-                return;
-            }
-
-            IsRecording = true;
-            RecordingStatus = "⏺ 录制中...";
-            _ = UpdateRecordingDurationAsync();
-        }
-
-        [RelayCommand]
-        private async Task StopRecording()
-        {
-            if (_recorder == null) return;
-
-            IsRecording = false;
-            RecordingStatus = "正在编码视频...";
-
-            var outputPath = await _recorder.StopAsync();
-            var lastErr = _recorder.LastError;
-            var frameCount = _recorder.FrameCount;
-            var durationSec = _recorder.DurationSeconds;
-            _recorder.Dispose();
-            _recorder = null;
-
-            if (outputPath != null && outputPath.EndsWith(".mp4"))
-            {
-                // 编码成功
-                try
-                {
-                    var info = new FileInfo(outputPath);
-                    var mediaFile = new MediaFile
-                    {
-                        Title = Path.GetFileNameWithoutExtension(outputPath),
-                        FilePath = outputPath, Type = "视频", FileFormat = ".mp4",
-                        FileSize = info.Length, Description = "屏幕录制",
-                        IsFavorite = false, DateAdded = DateTime.Now,
-                        DateModified = info.LastWriteTime
-                    };
-                    await _dataService.AddMediaFileAsync(mediaFile);
-                    try { await _dataService.AddRecordingAsync(mediaFile.Id, outputPath, durationSec, EnhancedRecording); } catch { }
-                    await LoadRecordingsAsync();
-                    await LoadDataAsync();
-                    await LoadStatisticsAsync();
-                }
-                catch (Exception ex) { Debug.WriteLine($"入库失败: {ex.Message}"); }
-
-                RecordingStatus = "✅ 录制完成";
-                MessageBox.Show($"录制完成！\n共 {frameCount} 帧\n{outputPath}",
-                    "录制完成", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else if (outputPath != null)
-            {
-                // 帧序列（ffmpeg 编码失败但帧已保存）
-                RecordingStatus = "⚠ 帧序列已保存";
-                MessageBox.Show($"已保存帧序列。\n\n{outputPath}\n\n" +
-                    $"ffmpeg 编码失败：{lastErr}\n\n" +
-                    $"请确保 ffmpeg.exe 已下载（数据统计页→检查依赖），\n" +
-                    $"或手动运行：ffmpeg -framerate 15 -i \"{outputPath.Replace('\\','/')}/%08d.jpg\" output.mp4",
-                    "录制完成(帧序列)", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-            else
-            {
-                RecordingStatus = "录制失败";
-                MessageBox.Show(lastErr ?? "未知错误", "录制失败",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-        [RelayCommand]
-        private void PauseRecording() => ShowNotImplementedMsg("暂停录制");
-
-        [RelayCommand]
-        private void OpenRecordingFolder()
-        {
-            var path = RecordingSavePath;
-            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "explorer.exe", Arguments = $"\"{path}\"",
-                UseShellExecute = false
-            });
-        }
-
-        private async Task UpdateRecordingDurationAsync()
-        {
-            while (_recorder?.IsRecording == true)
-            {
-                var ts = TimeSpan.FromSeconds(_recorder.DurationSeconds);
-                RecordingDuration = $"{ts.Minutes:D2}:{ts.Seconds:D2}";
-                await Task.Delay(500);
-            }
-            RecordingDuration = "00:00";
-        }
-
-        // ============================================================
-        // AI 对话面板
-        // ============================================================
-
-        /// <summary>对话消息列表。</summary>
-        public ObservableCollection<ChatMessage> AiMessages { get; } = new()
-        {
-            new ChatMessage
-            {
-                Role = "assistant",
-                Content = "你好！我是影音智增强管理系统的 AI 助手。\n\n你可以：\n• 从左侧勾选文件\n• 点击快捷提示按钮\n• 或直接输入问题\n\n未配置 API 时将使用本地模板分析。"
-            }
-        };
-
-        /// <summary>输入框文本。</summary>
-        [ObservableProperty]
-        private string _aiInputText = "";
-
-        // ---- AI 对话配置 ----
-
-        [ObservableProperty]
-        private string _chatApiEndpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-
-        public List<string> ApiEndpointPresets { get; } = new()
-        {
-            "https://dashscope.aliyuncs.com/compatible-mode/v1",
-            "https://api.openai.com/v1",
-            "https://api.deepseek.com",
-            "https://open.bigmodel.cn",
-            "http://localhost:11434"
-        };
-
-        [ObservableProperty]
-        private string _chatApiKey = "";
-
-        [ObservableProperty]
-        private string _chatModelName = "qwen-plus";
-
-        [ObservableProperty]
-        private bool _chatConfigured = false;
-
-        [ObservableProperty]
-        private string _chatStatusText = "○ 未配置";
-
-        partial void OnChatApiEndpointChanged(string value) => UpdateChatConfig();
-        partial void OnChatApiKeyChanged(string value) => UpdateChatConfig();
-        partial void OnChatModelNameChanged(string value) => UpdateChatConfig();
-
-        private void UpdateChatConfig()
-        {
-            _aiService.ConfigureChat(ChatApiKey, ChatApiEndpoint, ChatModelName);
-            ChatConfigured = _aiService.IsChatConfigured;
-            ChatStatusText = ChatConfigured ? $"● 已连接  {ChatModelName}" : "○ 未配置";
-        }
-
-        // ---- AI 编辑配置 ----
-
-        [ObservableProperty]
-        private string _editApiEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
-
-        [ObservableProperty]
-        private string _editApiKey = "";
-
-        [ObservableProperty]
-        private string _editModelName = "wanx2.0-t2i-turbo";
-
-        [ObservableProperty]
-        private string _editFormat = "auto";
-
-        [ObservableProperty]
-        private bool _editConfigured = false;
-
-        [ObservableProperty]
-        private string _editStatusText = "○ 未配置";
-
-        public List<string> EditFormatOptions { get; } = new() { "auto", "openai", "dashscope" };
-
-        partial void OnEditApiEndpointChanged(string value) => UpdateEditConfig();
-        partial void OnEditApiKeyChanged(string value) => UpdateEditConfig();
-        partial void OnEditModelNameChanged(string value) => UpdateEditConfig();
-        partial void OnEditFormatChanged(string value) => UpdateEditConfig();
-
-        private void UpdateEditConfig()
-        {
-            _aiService.ConfigureEdit(EditApiKey, EditApiEndpoint, EditModelName, EditFormat);
-            EditConfigured = _aiService.IsEditConfigured;
-            EditStatusText = EditConfigured ? $"● 已连接  {EditModelName}" : "○ 未配置";
-        }
-
-        private List<MediaFile> GetSelectedAiFiles() =>
-            MediaFilesList.Where(f => f.IsSelected).ToList();
-
-        [RelayCommand]
-        private async Task SendAiMessage()
-        {
-            if (string.IsNullOrWhiteSpace(AiInputText)) return;
-
-            var userMsg = new ChatMessage { Role = "user", Content = AiInputText };
-            AiMessages.Add(userMsg);
-            AiInputText = "";
-
-            var files = GetSelectedAiFiles();
-            var thinking = new ChatMessage { Role = "thinking", Content = "正在处理，请稍候..." };
-            AiMessages.Add(thinking);
-
-            var reply = await _aiService.ChatAsync(AiMessages.Take(AiMessages.Count - 1).ToList(), files);
-            AiMessages.Remove(thinking);
-            AiMessages.Add(new ChatMessage { Role = "assistant", Content = reply });
-        }
-
-        [RelayCommand]
-        private async Task ApplyAiPreset(string preset)
-        {
-            var files = GetSelectedAiFiles();
-
-            switch (preset)
-            {
-                case "简介":
-                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📝 请为选中的文件生成简介和标签。" });
-                    break;
-
-                case "数据":
-                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📊 请生成选中文件的统计摘要。" });
-                    break;
-
-                default: return;
-            }
-
-            var thinking = new ChatMessage { Role = "thinking", Content = "正在处理，请稍候..." };
-            AiMessages.Add(thinking);
-
-            var prompt = preset switch
-            {
-                "简介" => AiService.DescriptionPrompt(),
-                "数据" => AiService.DataSummaryPrompt(),
-                _ => null
-            };
-
-            var reply = await _aiService.ChatAsync(AiMessages.Take(AiMessages.Count - 1).ToList(), files, prompt);
-            AiMessages.Remove(thinking);
-            AiMessages.Add(new ChatMessage { Role = "assistant", Content = reply });
-        }
-
-        [RelayCommand]
-        private void ClearAiChat()
-        {
-            AiMessages.Clear();
-            AiMessages.Add(new ChatMessage
-            {
-                Role = "assistant",
-                Content = "对话已清空。选择文件后点击快捷提示或直接输入问题。"
-            });
-        }
-
-        // ============================================================
-        // AI 编辑面板
-        // ============================================================
-
-        /// <summary>编辑选中的图片文件。</summary>
-        public ObservableCollection<MediaFile> AiEditFiles { get; } = new();
-
-        /// <summary>编辑提示词。</summary>
-        [ObservableProperty]
-        private string _aiEditPrompt = "";
-
-        /// <summary>原图预览。</summary>
-        [ObservableProperty]
-        private BitmapSource? _aiEditOriginal;
-
-        /// <summary>结果图。</summary>
-        [ObservableProperty]
-        private BitmapSource? _aiEditResult;
-
-        /// <summary>是否正在生成。</summary>
-        [ObservableProperty]
-        private bool _aiEditGenerating = false;
-
-        /// <summary>生成状态文本。</summary>
-        [ObservableProperty]
-        private string _aiEditStatus = "";
-
-        [RelayCommand]
-        private async Task AiEditSelectFile()
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "选择要编辑的图片",
-                Filter = "图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.webp"
-            };
-            if (dialog.ShowDialog() != true) return;
-
-            try
-            {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(dialog.FileName);
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                AiEditOriginal = bitmap;
-                AiEditResult = null;
-                AiEditStatus = "";
-                AiEditFiles.Clear();
-                OnPropertyChanged(nameof(HasEditImage));
-                AiEditFiles.Add(new MediaFile
-                {
-                    Title = System.IO.Path.GetFileName(dialog.FileName),
-                    FilePath = dialog.FileName,
-                    Type = "图片"
-                });
-            }
-            catch { }
-        }
-
-        public bool HasEditImage => AiEditOriginal != null;
-        public bool HasEditResult => AiEditResult != null;
-
-        [RelayCommand]
-        private void AiEditClearFile()
-        {
-            AiEditFiles.Clear();
-            AiEditOriginal = null;
-            AiEditResult = null;
-            AiEditStatus = "";
-            OnPropertyChanged(nameof(HasEditImage));
-        }
-
-        [RelayCommand]
-        private void AiEditSave()
-        {
-            if (AiEditResult == null) { AiEditStatus = "⚠ 暂无生成结果，请先生成图片。"; return; }
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Title = "保存生成的图片",
-                Filter = "PNG|*.png|JPEG|*.jpg",
-                FileName = $"ai_gen_{DateTime.Now:yyyyMMdd_HHmmss}.png"
-            };
-            if (dialog.ShowDialog() != true) return;
-
-            try
-            {
-                var encoder = dialog.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-                    ? (BitmapEncoder)new JpegBitmapEncoder { QualityLevel = 95 }
-                    : new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(AiEditResult));
-                using var stream = new FileStream(dialog.FileName, FileMode.Create);
-                encoder.Save(stream);
-                AiEditStatus = $"✅ 已保存到 {dialog.FileName}";
-            }
-            catch (Exception ex) { AiEditStatus = $"保存失败: {ex.Message}"; }
-        }
-
-        [RelayCommand]
-        private async Task AiEditGenerate()
-        {
-            if (!_aiService.IsEditConfigured)
-            {
-                AiEditStatus = "⚠ 请先在系统设置中配置 API（阿里百炼）。";
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(AiEditPrompt))
-            {
-                AiEditStatus = "⚠ 请输入增强/美化描述。";
-                return;
-            }
-            // 无图也允许生成（纯文本生图）
-
-            AiEditGenerating = true;
-            AiEditStatus = "正在生成，通常需要 10-30 秒...";
-            AiEditResult = null;
-
-            try
-            {
-                string? imageB64 = null;
-                var filePath = AiEditFiles.FirstOrDefault()?.FilePath;
-                if (filePath != null && File.Exists(filePath))
-                    imageB64 = Convert.ToBase64String(await File.ReadAllBytesAsync(filePath));
-
-                var (resultBytes, error) = await _aiService.GenerateImageAsync(AiEditPrompt, imageB64);
-                if (resultBytes != null)
-                {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = new MemoryStream(resultBytes);
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    AiEditResult = bitmap;
-                    OnPropertyChanged(nameof(HasEditResult));
-                    AiEditStatus = "✅ 生成完成";
-                }
-                else
-                {
-                    AiEditStatus = $"❌ {error ?? "未知错误"}";
-                }
-            }
-            catch (Exception ex)
-            {
-                AiEditStatus = $"❌ 错误: {ex.Message}";
-            }
-            finally
-            {
-                AiEditGenerating = false;
-            }
-        }
-
-        // ============================================================
-        // 系统设置面板
-        // ============================================================
-
-        /// <summary>
-        /// 选择的运算设备（当前仅支持 CPU）。
-        /// </summary>
-        [ObservableProperty]
-        private string _selectedDevice = "CPU";
-
-        /// <summary>
-        /// 可选运算设备（仅 CPU）。
-        /// </summary>
-        public List<string> DeviceOptions { get; } = new()
-        {
-            "CPU"
-        };
-
-        /// <summary>
-        /// 录屏文件保存目录，默认为项目下的 Recordings 文件夹。
-        /// </summary>
-        [ObservableProperty]
-        private string _recordingSavePath = System.IO.Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "Recordings");
-
-        /// <summary>
-        /// 增强结果文件保存目录，默认为项目下的 Enhancements 文件夹。
-        /// </summary>
-        [ObservableProperty]
-        private string _enhancementSavePath = System.IO.Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "Enhancements");
-
-        /// <summary>
-        /// 缩略图缓存文件保存目录。
-        /// </summary>
-        [ObservableProperty]
-        private string _thumbnailSavePath = System.IO.Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "Thumbnails");
-
-        /// <summary>
-        /// 缩略图路径变化时同步到缩略图服务。
-        /// </summary>
-        partial void OnRecordingSavePathChanged(string value) => SavePathConfig();
-        partial void OnEnhancementSavePathChanged(string value) => SavePathConfig();
-        partial void OnThumbnailSavePathChanged(string value)
-        {
-            if (!string.IsNullOrWhiteSpace(value)) _thumbnailService.CacheDirectory = value;
-            SavePathConfig();
-        }
-
-        private void SavePathConfig()
-        {
-            var cfg = AppConfig.Load();
-            cfg.RecordingPath = _recordingSavePath;
-            cfg.EnhancementPath = _enhancementSavePath;
-            cfg.ThumbnailPath = _thumbnailSavePath;
-            AppConfig.Save(cfg);
-        }
-
-        // ============================================================
-        /// 应用版本号。
-        /// </summary>
-        public string AppVersion => "v1.0.0.0";
-
-        /// <summary>
-        /// 保存设置命令（待实现）。
-        /// </summary>
-        [RelayCommand]
-        private void SaveSettings()
-        {
-            var msg = "✅ 当前配置：\n\n";
-            msg += $"对话 API: {(ChatConfigured ? $"已连接 ({ChatModelName})" : "未配置")}\n";
-            msg += $"编辑 API: {(EditConfigured ? $"已连接 ({EditModelName})" : "未配置")}\n";
-            msg += $"录屏目录: {RecordingSavePath}\n";
-            msg += $"增强目录: {EnhancementSavePath}\n";
-            msg += $"缩略图目录: {ThumbnailSavePath}\n";
-            msg += "\n所有设置已实时生效。";
-            MessageBox.Show(msg, "系统设置", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        /// <summary>
-        /// 测试 API 密钥有效性（待实现）。
-        /// </summary>
-        [RelayCommand]
-        private void TestApiKey() => ShowNotImplementedMsg("测试 API 密钥");
-
-        /// <summary>
-        /// 重置所有设置到默认值（待实现）。
-        /// </summary>
-        [RelayCommand]
-        private void ResetAllSettings() => ShowNotImplementedMsg("重置所有设置");
-
-        // ============================================================
-        // 数据统计面板
-        // ============================================================
-
-        /// <summary>
-        /// 媒体文件总数。
-        /// </summary>
-        [ObservableProperty]
-        private int _totalFileCount = 0;
-
-        /// <summary>
-        /// 图片文件数量。
-        /// </summary>
-        [ObservableProperty]
-        private int _imageCount = 0;
-
-        /// <summary>
-        /// 视频文件数量。
-        /// </summary>
-        [ObservableProperty]
-        private int _videoCount = 0;
-
-        /// <summary>
-        /// 已执行的文件增强次数。
-        /// </summary>
-        [ObservableProperty]
-        private int _enhancementCount = 0;
-
-        /// <summary>
-        /// 录屏记录数量。
-        /// </summary>
-        [ObservableProperty]
-        private int _recordingCount = 0;
-
-        /// <summary>
-        /// 实时增强功能的使用次数。
-        /// </summary>
-        [ObservableProperty]
-        private int _realtimeEnhanceCount = 0;
-
-        /// <summary>
-        /// 总播放次数。
-        /// </summary>
-        [ObservableProperty]
-        private int _totalPlayCount = 0;
-
-        /// <summary>
-        /// 已收藏的文件数量。
-        /// </summary>
-        [ObservableProperty]
-        private int _favoriteCount = 0;
-
-        /// <summary>
-        /// 各文件的播放次数映射表（MediaFileId → 次数），用于 DataGrid 显示。
-        /// </summary>
-        private Dictionary<int, int> _playCountMap = new();
-
-        /// <summary>
-        /// 从数据库加载统计数据，更新仪表盘各卡片数值。
-        /// </summary>
-        private async Task LoadStatisticsAsync()
-        {
-            TotalFileCount = await _dataService.GetTotalCountAsync();
-            var (imageCount, videoCount) = await _dataService.GetTypeCountAsync();
-            ImageCount = imageCount;
-            VideoCount = videoCount;
-            EnhancementCount = await _dataService.GetEnhancementCountAsync();
-            RecordingCount = await _dataService.GetRecordingCountAsync();
-            TotalPlayCount = await _dataService.GetTotalPlayCountAsync();
-            FavoriteCount = await _dataService.GetFavoriteCountAsync();
-            // 实时增强使用次数暂未实现对应数据表，保留为 0
-            RealtimeEnhanceCount = 0;
-        }
-
-        /// <summary>
-        /// 从数据库加载录制历史。
-        /// </summary>
-        private async Task LoadRecordingsAsync()
-        {
-            var data = await _dataService.GetRecordingsAsync();
-            Recordings.Clear();
-            foreach (var r in data) Recordings.Add(r);
-        }
-
-        /// <summary>
-        /// 刷新统计数据命令。
-        /// </summary>
-        [RelayCommand]
-        private async Task RefreshStatistics()
-        {
-            await LoadStatisticsAsync();
-        }
-
-        /// <summary>
-        /// 批量校验所有媒体文件的源文件是否存在。
-        /// 对缺失文件提示用户删除记录或手动定位。
-        /// </summary>
-        [RelayCommand]
-        private async Task ValidateFiles()
-        {
-            var allFiles = await _dataService.GetAllMediaFilesAsync();
-            var missingCount = 0;
-            var repairedCount = 0;
-            var deletedCount = 0;
-
-            foreach (var file in allFiles)
-            {
-                if (!System.IO.File.Exists(file.FilePath))
-                {
-                    missingCount++;
-
-                    var result = System.Windows.MessageBox.Show(
-                        $"文件不存在：{file.Title}\n路径：{file.FilePath}\n\n" +
-                        "选择「是」→ 从库中删除该记录\n" +
-                        "选择「否」→ 手动定位文件的新位置\n" +
-                        "选择「取消」→ 跳过该文件",
-                        $"文件丢失（{missingCount}/{allFiles.Count}）",
-                        MessageBoxButton.YesNoCancel,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        await _dataService.DeleteMediaFileAsync(file.Id);
-                        deletedCount++;
-                    }
-                    else if (result == MessageBoxResult.No)
-                    {
-                        var openDialog = new Microsoft.Win32.OpenFileDialog();
-                        openDialog.Title = $"请定位「{file.Title}」的新位置";
-                        openDialog.Filter = "媒体文件|*.*";
-                        if (openDialog.ShowDialog() == true)
-                        {
-                            file.FilePath = openDialog.FileName;
-                            file.Title = System.IO.Path.GetFileNameWithoutExtension(openDialog.FileName);
-                            await _dataService.UpdateMediaFileAsync(file);
-                            repairedCount++;
-                        }
-                    }
-                }
-            }
-
-            await LoadDataAsync();
-            await LoadStatisticsAsync();
-
-            if (missingCount == 0)
-            {
-                System.Windows.MessageBox.Show("所有文件记录完好，未发现缺失。",
-                    "校验完成", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                System.Windows.MessageBox.Show(
-                    $"校验完成。\n共发现 {missingCount} 个缺失文件：\n已删除记录：{deletedCount} 个\n已重新定位：{repairedCount} 个\n已跳过：{missingCount - deletedCount - repairedCount} 个",
-                    "校验结果", MessageBoxButton.OK,
-                    deletedCount + repairedCount > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
-            }
-        }
-
-        /// <summary>
-        /// 检查并下载项目依赖项（如 FFmpeg）。
-        /// </summary>
-        [RelayCommand]
-        private async Task CheckDependencies()
-        {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var ffmpegExe = System.IO.Path.Combine(baseDir, "ffmpeg.exe");
-            var messages = new System.Text.StringBuilder();
-            messages.AppendLine("📋 依赖项检查结果：\n");
-
-            // 检查 FFmpeg
-            if (System.IO.File.Exists(ffmpegExe))
-            {
-                messages.AppendLine("✅ FFmpeg：已就绪");
-            }
-            else
-            {
-                messages.AppendLine("⏳ FFmpeg：未找到，正在下载...");
-                try
-                {
-                    var ffmpegDir = baseDir;
-                    Xabe.FFmpeg.FFmpeg.SetExecutablesPath(ffmpegDir);
-                    await Xabe.FFmpeg.Downloader.FFmpegDownloader.GetLatestVersion(
-                        Xabe.FFmpeg.Downloader.FFmpegVersion.Official, ffmpegDir);
-
-                    if (System.IO.File.Exists(ffmpegExe))
-                        messages.AppendLine("✅ FFmpeg：下载成功");
-                    else
-                        messages.AppendLine("❌ FFmpeg：下载失败，请检查网络后重试");
-                }
-                catch (Exception ex)
-                {
-                    messages.AppendLine($"❌ FFmpeg：下载出错 - {ex.Message}");
-                }
-            }
-
-            System.Windows.MessageBox.Show(messages.ToString(), "依赖项检查",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        /// <summary>
-        /// 跳转到 AI 总结页面。
-        /// </summary>
-        [RelayCommand]
-        private void GoToAISummary()
-        {
-            SelectedPageIndex = 4;
         }
     }
 }

@@ -34,6 +34,12 @@ namespace MediaEnhancer.Models
         public string OutputPath { get; set; }
 
         /// <summary>
+        /// 本次增强使用的参数（JSON 格式）。
+        /// 例如 {"contrast":1.5,"brightness":10}，可用于复现历史增强效果。
+        /// </summary>
+        public string? ParametersJson { get; set; }
+
+        /// <summary>
         /// 增强完成的时间。
         /// </summary>
         public DateTime CreatedAt { get; set; }

@@ -26,12 +26,21 @@ namespace MediaEnhancer
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
-            // 注册默认增强方法（新增算法只需在此处加一行 registry.Register(...)）
+            // 注册增强方法
+            // - Register：实时增强可用（SupportsRealTime = true）
+            // - RegisterOffline：仅离线增强（SupportsRealTime = false）
             var registry = ServiceProvider.GetRequiredService<EnhancementRegistry>();
             registry.Register(new LinearStretchMethod());
+            registry.Register(new MultinexNanoMethod());
+            registry.RegisterOffline(new MultinexMethod());
+            registry.RegisterOffline(new ZeroDceMethod());
 
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
+
+            // 启动后台清理过期缩略图缓存（30 天未访问的）
+            var thumbnailService = ServiceProvider.GetRequiredService<IThumbnailService>();
+            _ = Task.Run(() => thumbnailService.CleanupOrphanedThumbnailsAsync());
         }
 
         private void ConfigureServices(IServiceCollection services)

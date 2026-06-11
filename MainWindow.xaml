@@ -26,6 +26,8 @@
         <core:MarkdownTextConverter x:Key="MarkdownTextConverter" />
         <!-- 布尔取反 -->
         <core:InvertBoolConverter x:Key="InvertBoolConverter" />
+        <!-- 页面索引相等判断（导航按钮高亮用） -->
+        <core:PageEqConverter x:Key="PageEqConverter" />
 
         <!-- ============================================================ -->
         <!-- 基础颜色与尺寸常量（统一管理，方便后续整体换肤）              -->
@@ -127,42 +129,7 @@
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#CBD5E1"/>
                 </Trigger>
-                <!-- 当前激活的页面 - 高亮显示 -->
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="1">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="2">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="3">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="4">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="5">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="6">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedPageIndex}" Value="0">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <Setter Property="Foreground" Value="#1D4ED8"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
+                <!-- 页面激活高亮：由各按钮自身的 Style.Trigger + PageEqConverter 实现 -->
             </Style.Triggers>
         </Style>
 
@@ -393,33 +360,125 @@
                 <!-- 导航按钮列表 -->
                 <StackPanel Grid.Row="1" Margin="0,0,0,0">
                     <Button Content="📊  数据统计"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="0"/>
+                            CommandParameter="0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=0}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="📂  文件管理"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="1"/>
+                            CommandParameter="1">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=1}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="🔧  离线增强"
+                            Command="{Binding ChangePageCommand}"
+                            CommandParameter="2">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=2}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="✨  实时增强"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="2"/>
+                            CommandParameter="3">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=3}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="⏺  屏幕录制"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="3"/>
+                            CommandParameter="4">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=4}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="💬  AI 对话"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="4"/>
+                            CommandParameter="5">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=5}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="🎨  AI 编辑"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="5"/>
+                            CommandParameter="6">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=6}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="⚙  系统设置"
-                            Style="{StaticResource NavButtonStyle}"
                             Command="{Binding ChangePageCommand}"
-                            CommandParameter="6"/>
+                            CommandParameter="7">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPageIndex, Converter={StaticResource PageEqConverter}, ConverterParameter=7}" Value="True">
+                                        <Setter Property="Background" Value="#DBEAFE"/>
+                                        <Setter Property="Foreground" Value="#1D4ED8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
 
                 <!-- 底部版本信息 -->
@@ -830,9 +889,9 @@
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- 页面 2：实时增强                                        -->
+                <!-- 页面 3：实时增强                                        -->
                 <!-- ==================================================== -->
-                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=2}">
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=3}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -844,73 +903,17 @@
                         <TextBlock Text="对任意屏幕内容进行低延迟实时画面增强，支持多种增强方法与参数调节" Style="{StaticResource PageSubtitleStyle}"/>
                     </StackPanel>
 
-                    <!-- 两列布局：左侧预览区 + 右侧控制区 -->
+                    <!-- 单列控制区布局 -->
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="380"/>
+                            <ColumnDefinition Width="500"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 左侧预览区域 -->
-                        <Border Grid.Column="0"
-                                Style="{StaticResource CardStyle}"
-                                Margin="0,0,20,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <TextBlock Grid.Row="0"
-                                           Text="画面预览"
-                                           Style="{StaticResource SectionTitleStyle}"/>
-
-                                <!-- 预览区 -->
-                                <Border Grid.Row="1"
-                                        Background="#F8FAFC"
-                                        BorderBrush="#E2E8F0"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Margin="0,0,0,10">
-                                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                                  VerticalScrollBarVisibility="Auto">
-                                        <Image Source="{Binding EnhancedPreview}"
-                                               Stretch="Uniform"
-                                               MaxWidth="400" MaxHeight="300"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                    </ScrollViewer>
-                                </Border>
-
-                                <!-- 预览操作按钮 -->
-                                <StackPanel Grid.Row="2" Orientation="Horizontal">
-                                    <Button Content="📷 选择图片"
-                                            Style="{StaticResource SecondaryButtonStyle}"
-                                            Command="{Binding PreviewEnhancementCommand}"
-                                            Margin="0,0,8,0"/>
-                                    <Button Content="🔄 重置参数"
-                                            Style="{StaticResource SecondaryButtonStyle}"
-                                            Command="{Binding ResetEnhancementCommand}"
-                                            Margin="0,0,8,0"/>
-                                    <Button Content="📥 导出增强图"
-                                            Style="{StaticResource PrimaryButtonStyle}"
-                                            Command="{Binding ExportEnhancedCommand}"
-                                            CommandParameter="{Binding SelectedFile}"/>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- 分隔线 -->
-                        <Rectangle Grid.Column="1"
-                                   Width="1"
-                                   Fill="#E2E8F0"
-                                   Margin="0,0,0,0"/>
-
-                        <!-- 右侧控制区 -->
-                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Margin="20,0,0,0">
+                        <!-- 控制区（居中） -->
+                        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
 
                                 <!-- 增强开关 -->
                                 <Border Style="{StaticResource CardStyle}">
@@ -934,6 +937,11 @@
                                                         <DataTrigger Binding="{Binding IsEnhancing}" Value="True">
                                                             <Setter Property="IsEnabled" Value="False"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsRealTimeMethodSelected}" Value="False">
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                            <Setter Property="Content" Value="⛔ 该方法不支持实时增强"/>
+                                                            <Setter Property="ToolTip" Value="请切换到支持实时的增强方法（如线性拉伸或 Multinex Nano）"/>
+                                                        </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Button.Style>
@@ -944,6 +952,20 @@
                                         <ComboBox ItemsSource="{Binding EnhancementMethods}"
                                                   SelectedItem="{Binding SelectedMethod}"
                                                   Style="{StaticResource ComboBoxStyle}"/>
+                                        <TextBlock Margin="0,4,0,0" FontSize="11">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="⚡ 支持实时增强"/>
+                                                    <Setter Property="Foreground" Value="#059669"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsRealTimeMethodSelected}" Value="False">
+                                                            <Setter Property="Text" Value="⏳ 仅离线增强（全屏不可用）"/>
+                                                            <Setter Property="Foreground" Value="#D97706"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
                                         <StackPanel Visibility="{Binding IsLinearStretchSelected, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <Rectangle Style="{StaticResource DividerStyle}"/>
@@ -992,9 +1014,9 @@
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- 页面 3：屏幕录制                                        -->
+                <!-- 页面 4：屏幕录制                                        -->
                 <!-- ==================================================== -->
-                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=3}">
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=4}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -1091,25 +1113,18 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0"
                                                     Content="⏺ 开始"
                                                     Style="{StaticResource DangerButtonStyle}"
                                                     Command="{Binding StartRecordingCommand}"
-                                                    Margin="0,0,4,0"
+                                                    Margin="0,0,6,0"
                                                     Height="38"/>
                                             <Button Grid.Column="1"
-                                                    Content="⏸ 暂停"
-                                                    Style="{StaticResource SecondaryButtonStyle}"
-                                                    Command="{Binding PauseRecordingCommand}"
-                                                    Margin="4,0,4,0"
-                                                    Height="38"/>
-                                            <Button Grid.Column="2"
                                                     Content="⏹ 停止"
                                                     Style="{StaticResource SecondaryButtonStyle}"
                                                     Command="{Binding StopRecordingCommand}"
-                                                    Margin="4,0,0,0"
+                                                    Margin="6,0,0,0"
                                                     Height="38"/>
                                         </Grid>
 
@@ -1195,9 +1210,9 @@
 
                 <!-- ==================================================== -->
                 <!-- ==================================================== -->
-                <!-- 页面 4：AI 对话                                          -->
+                <!-- 页面 5：AI 对话                                          -->
                 <!-- ==================================================== -->
-                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=4}">
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=5}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="260"/>
                         <ColumnDefinition Width="*"/>
@@ -1414,9 +1429,9 @@
 
                 <!-- ==================================================== -->
                 <!-- ==================================================== -->
-                <!-- 页面 5：AI 编辑                                          -->
+                <!-- 页面 6：AI 编辑                                          -->
                 <!-- ==================================================== -->
-                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=5}">
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=6}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -1579,9 +1594,9 @@
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- 页面 6：系统设置                                        -->
+                <!-- 页面 7：系统设置                                        -->
                 <!-- ==================================================== -->
-                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=6}">
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=7}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -1736,6 +1751,158 @@
                 </Grid>
 
                 <!-- ==================================================== -->
+                <!-- 页面 2：离线增强                                        -->
+                <!-- ==================================================== -->
+                <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=2}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 页面标题 -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="离线增强" Style="{StaticResource PageTitleStyle}"/>
+                        <TextBlock Text="选择方法、预览效果、增强并导出图片" Style="{StaticResource PageSubtitleStyle}"/>
+                    </StackPanel>
+
+                    <!-- 三列布局：方法选择 | 预览区 | 使用说明 -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="280"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 左列：方法选择 -->
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,0,10,0">
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="增强方法" Style="{StaticResource SectionTitleStyle}"/>
+                                        <TextBlock Text="选择用于离线增强的深度学习算法"
+                                                   FontSize="13" Foreground="#64748B" Margin="0,0,0,12"/>
+
+                                        <TextBlock Text="当前方法" Style="{StaticResource FormLabelStyle}"/>
+                                        <ComboBox ItemsSource="{Binding OfflineEnhancementMethods}"
+                                                  SelectedItem="{Binding SelectedOfflineMethodName}"
+                                                  Style="{StaticResource ComboBoxStyle}"
+                                                  Margin="0,0,0,12"/>
+
+                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="方法说明" Margin="0,16,0,8"/>
+                                        <Border Background="#F8FAFC" CornerRadius="8" Padding="14,12">
+                                            <TextBlock FontSize="13" Foreground="#475569" TextWrapping="Wrap">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="请从上方下拉框选择增强方法，然后在文件管理中右键文件 → 增强即可。"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="线性拉伸">
+                                                                <Setter Property="Text" Value="线性拉伸：像素值线性映射到全动态范围，无额外依赖，极速处理。适合轻度增强场景。"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Multinex Nano 低光增强">
+                                                                <Setter Property="Text" Value="Multinex Nano：超轻量 Retinex 网络（15K 参数），LOL-v2 合成数据训练。速度最快，适合批量处理和视频增强。"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Multinex 低光增强">
+                                                                <Setter Property="Text" Value="Multinex：完整 Retinex 网络（44K 参数），LOL-v1 数据训练。画质最佳，适合单张图片精细增强。"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Zero-DCE++ 低光增强">
+                                                                <Setter Property="Text" Value="Zero-DCE++：轻量级深度曲线估计网络（80K 参数），7 层深度可分离卷积。通过像素级曲线迭代增强暗光图像。"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- 中列：预览区 -->
+                        <Border Grid.Column="1"
+                                Style="{StaticResource CardStyle}"
+                                Margin="10,0,10,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="增强预览"
+                                           Style="{StaticResource SectionTitleStyle}"/>
+
+                                <Border Grid.Row="1"
+                                        Background="#F8FAFC"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Margin="0,0,0,10">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                                  VerticalScrollBarVisibility="Auto">
+                                        <Image Source="{Binding EnhancedPreview}"
+                                               Stretch="Uniform"
+                                               MaxWidth="500" MaxHeight="400"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                    <Button Content="📷 选择图片"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Command="{Binding PreviewEnhancementCommand}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="📥 导出增强图"
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Command="{Binding ExportEnhancedCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 右列：使用说明 -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="使用方式" Style="{StaticResource SectionTitleStyle}"/>
+                                        <TextBlock FontSize="13" Foreground="#475569" TextWrapping="Wrap" Margin="0,0,0,16"
+                                                   Text="离线增强作用于以下场景：" LineHeight="20"/>
+
+                                        <Border Background="#F0FDF4" CornerRadius="6" Padding="12,10" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <TextBlock Text="📁 单张图片增强" FontSize="13" FontWeight="SemiBold" Foreground="#166534"/>
+                                                <TextBlock Text="文件管理 → 选中文件 → 详情面板 → 增强" FontSize="12" Foreground="#15803D" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Background="#EFF6FF" CornerRadius="6" Padding="12,10" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <TextBlock Text="📚 批量图片增强" FontSize="13" FontWeight="SemiBold" Foreground="#1E40AF"/>
+                                                <TextBlock Text="文件管理 → 多选文件 → 底部批量工具栏 → 增强" FontSize="12" Foreground="#2563EB" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Background="#FEF3C7" CornerRadius="6" Padding="12,10" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <TextBlock Text="🎬 视频逐帧增强" FontSize="13" FontWeight="SemiBold" Foreground="#92400E"/>
+                                                <TextBlock Text="文件管理 → 选中视频 → 详情面板 → 增强" FontSize="12" Foreground="#B45309" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Rectangle Style="{StaticResource DividerStyle}"/>
+
+                                        <TextBlock Text="💡 提示" FontSize="13" FontWeight="SemiBold" Foreground="#7C3AED" Margin="0,0,0,6"/>
+                                        <TextBlock FontSize="12" Foreground="#6D28D9" TextWrapping="Wrap"
+                                                   Text="• 深度学习增强耗时较长，视频增强请耐心等待&#x0a;• 实时全屏增强请前往「实时增强」页面，仅支持轻量级方法"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+
+                <!-- ==================================================== -->
                 <!-- 页面 0：数据统计                                        -->
                 <!-- ==================================================== -->
                 <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=0}">
@@ -1887,12 +2054,12 @@
                                         <Button Content="✨ 实时增强"
                                                 Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding ChangePageCommand}"
-                                                CommandParameter="2"
+                                                CommandParameter="3"
                                                 Margin="0,0,8,0"/>
                                         <Button Content="⏺ 屏幕录制"
                                                 Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding ChangePageCommand}"
-                                                CommandParameter="3"
+                                                CommandParameter="4"
                                                 Margin="0,0,8,0"/>
                                         <Button Content="🤖 AI 总结"
                                                 Style="{StaticResource PrimaryButtonStyle}"
@@ -1901,7 +2068,7 @@
                                         <Button Content="⚙ 系统设置"
                                                 Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding ChangePageCommand}"
-                                                CommandParameter="5"
+                                                CommandParameter="6"
                                                 Margin="0,0,8,0"/>
                                         <Button Content="🔄 刷新数据"
                                                 Style="{StaticResource SecondaryButtonStyle}"

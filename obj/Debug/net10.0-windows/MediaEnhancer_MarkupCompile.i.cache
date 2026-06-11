@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_O
 D:\vs_repo\repo1\MediaEnhancer\App.xaml
 71075964538
 
-51-829321164
+61-1341307785
 2421074000001
 MainWindow.xaml;Views\DeleteConfirmDialog.xaml;Views\FileDetailWindow.xaml;Views\FullscreenEnhanceWindow.xaml;Views\ImageViewerWindow.xaml;Views\InputDialog.xaml;Views\MediaPlayerWindow.xaml;
 
-True
+False
 

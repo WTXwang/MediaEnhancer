@@ -56,6 +56,11 @@ namespace MediaEnhancer.Services
         /// </summary>
         Task ToggleFavoriteAsync(int id);
 
+        /// <summary>
+        /// 根据收藏状态同步 Favorites 表记录（新增或删除）。
+        /// </summary>
+        Task SyncFavoriteRecordAsync(int mediaFileId, bool isFavorite);
+
         // ─── 删除 ───
 
         /// <summary>

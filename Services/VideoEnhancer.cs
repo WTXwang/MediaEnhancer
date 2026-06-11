@@ -10,9 +10,15 @@ namespace MediaEnhancer.Services;
 /// </summary>
 public class VideoEnhancer
 {
-    private readonly IEnhancementMethod _method;
+    private readonly IRealTimeEnhancer _enhancer;
+    private readonly IReadOnlyDictionary<string, double>? _parameters;
 
-    public VideoEnhancer(IEnhancementMethod method) { _method = method; }
+    public VideoEnhancer(IRealTimeEnhancer enhancer,
+        IReadOnlyDictionary<string, double>? parameters = null)
+    {
+        _enhancer = enhancer;
+        _parameters = parameters;
+    }
 
     public async Task<string?> EnhanceAsync(string inputPath, string outputDir,
         IProgress<(int current, int total)>? progress = null,
@@ -62,7 +68,6 @@ public class VideoEnhancer
 
             // 3. 逐帧增强
             var total = frameFiles.Count;
-            var realTime = _method as IRealTimeEnhancer;
 
             await Task.Run(() =>
             {
@@ -83,7 +88,7 @@ public class VideoEnhancer
                         System.Runtime.InteropServices.Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
                         src.UnlockBits(data);
 
-                        byte[] enhanced = realTime?.Enhance(pixels, w, h, stride, null) ?? pixels;
+                        byte[] enhanced = _enhancer.Enhance(pixels, w, h, stride, _parameters);
 
                         using var outBmp = new System.Drawing.Bitmap(w, h,
                             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -137,12 +142,16 @@ public class VideoEnhancer
 
             if (ct.IsCancellationRequested || !success) return null;
 
-            try { Directory.Delete(tempDir, true); } catch { }
             return outputPath;
         }
         catch
         {
             return null;
+        }
+        finally
+        {
+            // 无论成功或失败都清理临时帧目录，避免 %TEMP% 堆积
+            try { Directory.Delete(tempDir, true); } catch { }
         }
     }
 
