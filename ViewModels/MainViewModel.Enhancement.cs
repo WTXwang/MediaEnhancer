@@ -72,6 +72,7 @@ partial class MainViewModel
         partial void OnSelectedMethodChanged(string value)
         {
             _registry.SetCurrent(value);
+            OnPropertyChanged(nameof(IsOnnxRealtimeMethod));
             RefreshPreview();
         }
 
@@ -676,10 +677,16 @@ partial class MainViewModel
         private string _recordingStatus = "就绪";
 
         /// <summary>
+        /// 当前实时方法是否为 ONNX（速度较慢，录制可能掉帧）。
+        /// </summary>
+        public bool IsOnnxRealtimeMethod =>
+            _registry.Current?.Name.Contains("Nano") == true;
+
+        /// <summary>
         /// 是否启用增强录制（录制时同步增强画面）。
         /// </summary>
         [ObservableProperty]
-        private bool _enhancedRecording = true;
+        private bool _enhancedRecording = false;
 
         [RelayCommand]
         private void StartRecording()
@@ -696,17 +703,25 @@ partial class MainViewModel
             var screenW = (int)(System.Windows.SystemParameters.PrimaryScreenWidth * dpi.DpiScaleX);
             var screenH = (int)(System.Windows.SystemParameters.PrimaryScreenHeight * dpi.DpiScaleY);
 
-            IRealTimeEnhancer? enhancer = EnhancedRecording ? _registry.Current : null;
+            IRealTimeEnhancer? enhancer = null;
+            IOnnxEnhancement? offlineEnhancer = null;
             IReadOnlyDictionary<string, double>? eParams = null;
-            if (enhancer != null)
+
+            if (EnhancedRecording)
             {
+                // 离线方法优先（后处理增强，不限实时性）
+                var offline = GetSelectedOfflineMethod();
+                if (offline is IOnnxEnhancement onnx)
+                    offlineEnhancer = onnx;
+                // 实时方法作为回退
+                enhancer = _registry.Current;
                 var dict = new Dictionary<string, double>();
                 foreach (var p in LinearStretch.Parameters) dict[p.Key] = p.Value;
                 eParams = dict;
             }
 
             _recorder = new ScreenRecorder(screenW, screenH, outputDir,
-                enhancer, eParams, fps: 15);
+                enhancer, offlineEnhancer, eParams, fps: 15);
 
             _recorder.Start();
 
@@ -718,9 +733,22 @@ partial class MainViewModel
             }
 
             IsRecording = true;
+            IsProcessingRecording = false;
             RecordingStatus = "⏺ 录制中...";
             _ = UpdateRecordingDurationAsync();
         }
+
+        /// <summary>
+        /// 是否正在后处理增强/编码中（禁止再次开始录制）。
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanStartRecording))]
+        private bool _isProcessingRecording = false;
+
+        /// <summary>
+        /// 是否可以开始录制（不在录制中，不在处理中）。
+        /// </summary>
+        public bool CanStartRecording => !IsRecording && !IsProcessingRecording;
 
         [RelayCommand]
         private async Task StopRecording()
@@ -728,9 +756,11 @@ partial class MainViewModel
             if (_recorder == null) return;
 
             IsRecording = false;
-            RecordingStatus = "正在编码视频...";
+            IsProcessingRecording = true;
+            RecordingStatus = "正在处理，请稍候...";
 
-            var outputPath = await _recorder.StopAsync();
+            var statusProgress = new Progress<string>(s => RecordingStatus = s);
+            var outputPath = await _recorder.StopAsync(statusProgress);
             var lastErr = _recorder.LastError;
             var frameCount = _recorder.FrameCount;
             var durationSec = _recorder.DurationSeconds;
@@ -773,6 +803,7 @@ partial class MainViewModel
                 MessageBox.Show(lastErr ?? "未知错误", "录制失败",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+            IsProcessingRecording = false;
         }
 
         [RelayCommand]

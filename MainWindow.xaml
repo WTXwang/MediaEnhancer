@@ -662,6 +662,7 @@
                         <DataGrid x:Name="FileDataGrid"
                                   ItemsSource="{Binding MediaFilesList}"
                                   Style="{StaticResource DataGridStyle}"
+                                  Margin="0,0,0,100"
                                   SelectionMode="Extended"
                                   SelectedItem="{Binding SelectedFile, UpdateSourceTrigger=PropertyChanged}"
                                   CellEditEnding="DataGrid_CellEditEnding"
@@ -1146,12 +1147,14 @@
                                                     Content="⏺ 开始"
                                                     Style="{StaticResource DangerButtonStyle}"
                                                     Command="{Binding StartRecordingCommand}"
+                                                    IsEnabled="{Binding CanStartRecording}"
                                                     Margin="0,0,6,0"
                                                     Height="38"/>
                                             <Button Grid.Column="1"
                                                     Content="⏹ 停止"
                                                     Style="{StaticResource SecondaryButtonStyle}"
                                                     Command="{Binding StopRecordingCommand}"
+                                                    IsEnabled="{Binding IsRecording}"
                                                     Margin="6,0,0,0"
                                                     Height="38"/>
                                         </Grid>
@@ -1162,6 +1165,16 @@
                                                   FontSize="13"
                                                   Foreground="#475569"
                                                   Margin="0,4,0,0"/>
+                                        <TextBlock FontSize="11" Foreground="#94A3B8"
+                                                   Margin="20,4,0,0" TextWrapping="Wrap"
+                                                   Visibility="{Binding EnhancedRecording, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            💡 增强算法在「离线增强」页面中设置，当前方法：<Run Text="{Binding SelectedOfflineMethodName, Mode=OneWay}" FontWeight="SemiBold"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" Foreground="#D97706"
+                                                   Margin="20,2,0,0" TextWrapping="Wrap"
+                                                   Visibility="{Binding IsOnnxRealtimeMethod, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            ⚠ 当前实时方法为 ONNX 深度学习模型，增强录制帧率较低、可能掉帧。如需流畅录制建议切换为「线性拉伸」。
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
 
