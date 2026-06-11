@@ -10,7 +10,8 @@
         Background="Transparent"
         FontFamily="Microsoft YaHei">
 
-    <Border Background="White" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="1">
+    <Border Background="White" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="1"
+            MouseLeftButtonDown="Window_MouseLeftButtonDown">
         <Border.Effect>
             <DropShadowEffect ShadowDepth="8" Color="#000000" Opacity="0.15" BlurRadius="24"/>
         </Border.Effect>

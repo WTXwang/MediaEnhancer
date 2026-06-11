@@ -71,6 +71,12 @@ public partial class LoginWindow : Window
         _vm.SwitchModeCommand.Execute(null);
     }
 
+    /// <summary>拖拽窗口。</summary>
+    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 1) DragMove();
+    }
+
     /// <summary>关闭按钮。</summary>
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
