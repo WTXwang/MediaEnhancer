@@ -1,7 +1,7 @@
 {
-  "version": 4,
+  "version": 3,
   "targets": {
-    "net10.0-windows": {
+    "net10.0-windows7.0": {
       "CommunityToolkit.Mvvm/8.4.2": {
         "type": "package",
         "compile": {
@@ -3429,7 +3429,7 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net10.0-windows": [
+    "net10.0-windows7.0": [
       "CommunityToolkit.Mvvm >= 8.4.2",
       "Microsoft.EntityFrameworkCore.Design >= 10.0.8",
       "Microsoft.EntityFrameworkCore.Sqlite >= 10.0.8",
@@ -3442,23 +3442,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\admin\\.nuget\\packages\\": {},
-    "D:\\Microsoft Visual Studio\\shared\\NuGetPackages": {}
+    "C:\\Users\\WTX\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\vs_repo\\repo1\\MediaEnhancer\\MediaEnhancer.csproj",
+      "projectUniqueName": "D:\\作业们\\大三下\\window编程\\MediaEnhancer\\MediaEnhancer.csproj",
       "projectName": "MediaEnhancer",
-      "projectPath": "D:\\vs_repo\\repo1\\MediaEnhancer\\MediaEnhancer.csproj",
-      "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-      "outputPath": "D:\\vs_repo\\repo1\\MediaEnhancer\\obj\\",
+      "projectPath": "D:\\作业们\\大三下\\window编程\\MediaEnhancer\\MediaEnhancer.csproj",
+      "packagesPath": "C:\\Users\\WTX\\.nuget\\packages\\",
+      "outputPath": "D:\\作业们\\大三下\\window编程\\MediaEnhancer\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "D:\\Microsoft Visual Studio\\shared\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\WTX\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3471,8 +3471,7 @@
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net10.0-windows": {
-          "framework": "net10.0-windows7.0",
+        "net10.0-windows7.0": {
           "targetAlias": "net10.0-windows",
           "projectReferences": {}
         }
@@ -3487,11 +3486,10 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
-      "net10.0-windows": {
-        "framework": "net10.0-windows7.0",
+      "net10.0-windows7.0": {
         "targetAlias": "net10.0-windows",
         "dependencies": {
           "CommunityToolkit.Mvvm": {
@@ -3552,7 +3550,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

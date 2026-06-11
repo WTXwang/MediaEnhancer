@@ -67,25 +67,19 @@ namespace MediaEnhancer.Core
         }
 
         /// <summary>
-        /// 获取图片文件的实际宽高（使用 WPF 的 BitmapImage）。
-        /// 非图片文件或文件损坏时返回 (null, null)。
+        /// 获取图片文件的物理像素宽高（使用 System.Drawing.Image）。
+        /// 注意：WPF BitmapImage.PixelWidth 返回的是设备无关像素（受图片内嵌 DPI 影响），
+        /// 例如 72 DPI 的 1920×1080 照片会错误显示为 2560×1440。
         /// </summary>
         public static (int? width, int? height) GetImageDimensions(string filePath)
         {
             try
             {
-                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(filePath);
-                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                bitmap.DecodePixelWidth = 0; // 不缩小，读取原始尺寸
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return (bitmap.PixelWidth, bitmap.PixelHeight);
+                using var img = System.Drawing.Image.FromFile(filePath);
+                return (img.Width, img.Height);
             }
             catch
             {
-                // 非图片文件或文件损坏时返回空
                 return (null, null);
             }
         }

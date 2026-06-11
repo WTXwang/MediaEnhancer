@@ -52,6 +52,11 @@ namespace MediaEnhancer.Data
         }
 
         /// <summary>
+        /// 用户数据集。
+        /// </summary>
+        public DbSet<User> Users { get; set; }
+
+        /// <summary>
         /// 媒体文件数据集。
         /// </summary>
         public DbSet<MediaFile> MediaFiles { get; set; }
@@ -77,9 +82,9 @@ namespace MediaEnhancer.Data
         public DbSet<Favorite> Favorites { get; set; }
 
         /// <summary>
-        /// 缩略图记录数据集。
+        /// 实时增强会话记录数据集。
         /// </summary>
-        public DbSet<Thumbnail> Thumbnails { get; set; }
+        public DbSet<RealtimeSession> RealtimeSessions { get; set; }
 
         /// <summary>
         /// 配置模型关系与约束。
@@ -133,17 +138,40 @@ namespace MediaEnhancer.Data
                 .HasIndex(f => f.MediaFileId)
                 .IsUnique();
 
-            // Thumbnail → MediaFile 多对一关系
-            modelBuilder.Entity<Thumbnail>()
-                .HasOne(t => t.MediaFile)
+            // ─── User 配置 ───
+
+            // Username 唯一
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            // User → MediaFile：一对多
+            modelBuilder.Entity<MediaFile>()
+                .HasOne(m => m.User)
                 .WithMany()
-                .HasForeignKey(t => t.MediaFileId)
+                .HasForeignKey(m => m.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Thumbnail 中 MediaFileId 唯一，一个文件只有一个缩略图记录
-            modelBuilder.Entity<Thumbnail>()
-                .HasIndex(t => t.MediaFileId)
-                .IsUnique();
+            // 各关联表加 UserId 索引（加速按用户过滤）
+            modelBuilder.Entity<MediaFile>()
+                .HasIndex(m => m.UserId);
+            modelBuilder.Entity<PlayHistory>()
+                .HasIndex(p => p.UserId);
+            modelBuilder.Entity<EnhancementLog>()
+                .HasIndex(e => e.UserId);
+            modelBuilder.Entity<Recording>()
+                .HasIndex(r => r.UserId);
+            modelBuilder.Entity<Favorite>()
+                .HasIndex(f => f.UserId);
+
+            // RealtimeSession → User
+            modelBuilder.Entity<RealtimeSession>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<RealtimeSession>()
+                .HasIndex(r => r.UserId);
         }
     }
 }

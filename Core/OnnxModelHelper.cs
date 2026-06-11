@@ -133,9 +133,10 @@ public static class OnnxModelHelper
             {
                 int srcIdx = y * width + x;
                 int dstIdx = y * stride + x * 4;
-                pixels[dstIdx + 0] = ClampToByte(data[0 * height * width + srcIdx] * 255f);
-                pixels[dstIdx + 1] = ClampToByte(data[1 * height * width + srcIdx] * 255f);
-                pixels[dstIdx + 2] = ClampToByte(data[2 * height * width + srcIdx] * 255f);
+                // NCHW: [0]=R, [1]=G, [2]=B  →  BGRA: [+0]=B, [+1]=G, [+2]=R
+                pixels[dstIdx + 0] = ClampToByte(data[2 * height * width + srcIdx] * 255f); // B
+                pixels[dstIdx + 1] = ClampToByte(data[1 * height * width + srcIdx] * 255f); // G
+                pixels[dstIdx + 2] = ClampToByte(data[0 * height * width + srcIdx] * 255f); // R
                 pixels[dstIdx + 3] = 255;
             }
         }

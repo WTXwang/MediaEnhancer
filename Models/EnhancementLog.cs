@@ -43,5 +43,11 @@ namespace MediaEnhancer.Models
         /// 增强完成的时间。
         /// </summary>
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>归属用户 ID（外键）。</summary>
+        public int UserId { get; set; }
+
+        /// <summary>导航属性：归属用户。</summary>
+        public User? User { get; set; }
     }
 }

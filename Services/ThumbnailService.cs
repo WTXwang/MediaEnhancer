@@ -61,8 +61,12 @@ namespace MediaEnhancer.Services
                 if (file.Type == "图片")
                 {
                     // 图片缩略图依赖 WPF BitmapImage，必须在 UI 线程生成
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                        GenerateImageThumbnail(file.FilePath, cachePath));
+                    // 使用同步 Invoke 而非 InvokeAsync，避免 async 链路中消息泵未及时处理
+                    var dispatcher = Application.Current.Dispatcher;
+                    if (dispatcher.CheckAccess())
+                        GenerateImageThumbnail(file.FilePath, cachePath);
+                    else
+                        dispatcher.Invoke(() => GenerateImageThumbnail(file.FilePath, cachePath));
                 }
                 else if (file.Type == "视频")
                 {
@@ -71,15 +75,21 @@ namespace MediaEnhancer.Services
                         CaptureVideoFrameAsync(file.FilePath, cachePath));
                     if (!frameOk)
                     {
-                        await Application.Current.Dispatcher.InvokeAsync(() =>
-                            GenerateDefaultIcon(file.Type, cachePath));
+                        var dispatcher = Application.Current.Dispatcher;
+                        if (dispatcher.CheckAccess())
+                            GenerateDefaultIcon(file.Type, cachePath);
+                        else
+                            dispatcher.Invoke(() => GenerateDefaultIcon(file.Type, cachePath));
                     }
                 }
                 else
                 {
                     // 音频默认图标依赖 WPF DrawingVisual，必须在 UI 线程生成
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                        GenerateDefaultIcon(file.Type, cachePath));
+                    var dispatcher = Application.Current.Dispatcher;
+                    if (dispatcher.CheckAccess())
+                        GenerateDefaultIcon(file.Type, cachePath);
+                    else
+                        dispatcher.Invoke(() => GenerateDefaultIcon(file.Type, cachePath));
                 }
 
                 return File.Exists(cachePath) ? cachePath : null;
@@ -132,7 +142,8 @@ namespace MediaEnhancer.Services
         {
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
-            bitmap.UriSource = new Uri(sourcePath);
+            // 使用绝对路径 Uri 避免中文/特殊字符路径解析失败
+            bitmap.UriSource = new Uri(sourcePath, UriKind.Absolute);
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
             bitmap.DecodePixelWidth = ThumbnailSize; // 限制解码尺寸，节省内存

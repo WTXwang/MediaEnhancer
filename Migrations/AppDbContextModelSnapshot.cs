@@ -40,9 +40,14 @@ namespace MediaEnhancer.Migrations
                     b.Property<string>("ParametersJson")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaFileId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("EnhancementLogs");
                 });
@@ -59,10 +64,15 @@ namespace MediaEnhancer.Migrations
                     b.Property<int>("MediaFileId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaFileId")
                         .IsUnique();
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Favorites");
                 });
@@ -116,6 +126,9 @@ namespace MediaEnhancer.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("Width")
                         .HasColumnType("INTEGER");
 
@@ -125,6 +138,8 @@ namespace MediaEnhancer.Migrations
                         .IsUnique();
 
                     b.HasIndex("SourceFileId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("MediaFiles");
                 });
@@ -144,11 +159,45 @@ namespace MediaEnhancer.Migrations
                     b.Property<DateTime>("PlayedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaFileId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("PlayHistories");
+                });
+
+            modelBuilder.Entity("MediaEnhancer.Models.RealtimeSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("DurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("MethodName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StoppedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RealtimeSessions");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.Recording", b =>
@@ -185,14 +234,19 @@ namespace MediaEnhancer.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MediaFileId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Recordings");
                 });
 
-            modelBuilder.Entity("MediaEnhancer.Models.Thumbnail", b =>
+            modelBuilder.Entity("MediaEnhancer.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -201,22 +255,31 @@ namespace MediaEnhancer.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FilePath")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("LastAccessAt")
+                    b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("MediaFileId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MediaFileId")
+                    b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Thumbnails");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.EnhancementLog", b =>
@@ -227,7 +290,15 @@ namespace MediaEnhancer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MediaEnhancer.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("MediaFile");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.Favorite", b =>
@@ -238,7 +309,15 @@ namespace MediaEnhancer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MediaEnhancer.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("MediaFile");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.MediaFile", b =>
@@ -248,7 +327,15 @@ namespace MediaEnhancer.Migrations
                         .HasForeignKey("SourceFileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("MediaEnhancer.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("SourceFile");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.PlayHistory", b =>
@@ -259,7 +346,26 @@ namespace MediaEnhancer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MediaEnhancer.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("MediaFile");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MediaEnhancer.Models.RealtimeSession", b =>
+                {
+                    b.HasOne("MediaEnhancer.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MediaEnhancer.Models.Recording", b =>
@@ -270,18 +376,15 @@ namespace MediaEnhancer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("MediaFile");
-                });
-
-            modelBuilder.Entity("MediaEnhancer.Models.Thumbnail", b =>
-                {
-                    b.HasOne("MediaEnhancer.Models.MediaFile", "MediaFile")
+                    b.HasOne("MediaEnhancer.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("MediaFileId")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("MediaFile");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

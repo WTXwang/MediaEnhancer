@@ -103,6 +103,16 @@ partial class MainViewModel
             EditStatusText = EditConfigured ? $"● 已连接  {EditModelName}" : "○ 未配置";
         }
 
+        /// <summary>AI 上下文已选文件数量。</summary>
+        [ObservableProperty]
+        private int _selectedAiFileCount;
+
+        /// <summary>刷新已选文件计数（文件下拉框打开/关闭时调用）。</summary>
+        public void RefreshSelectedAiFileCount()
+        {
+            SelectedAiFileCount = MediaFilesList.Count(f => f.IsSelected);
+        }
+
         private List<MediaFile> GetSelectedAiFiles() =>
             MediaFilesList.Where(f => f.IsSelected).ToList();
 
@@ -242,7 +252,7 @@ partial class MainViewModel
         }
 
         [RelayCommand]
-        private void AiEditSave()
+        private async Task AiEditSave()
         {
             if (AiEditResult == null) { AiEditStatus = "⚠ 暂无生成结果，请先生成图片。"; return; }
             var dialog = new Microsoft.Win32.SaveFileDialog
@@ -261,7 +271,23 @@ partial class MainViewModel
                 encoder.Frames.Add(BitmapFrame.Create(AiEditResult));
                 using var stream = new FileStream(dialog.FileName, FileMode.Create);
                 encoder.Save(stream);
-                AiEditStatus = $"✅ 已保存到 {dialog.FileName}";
+
+                // 入库 + 缩略图
+                var info = new FileInfo(dialog.FileName);
+                var mediaFile = new MediaFile
+                {
+                    Title = Path.GetFileNameWithoutExtension(dialog.FileName),
+                    FilePath = dialog.FileName, Type = "图片",
+                    FileFormat = Path.GetExtension(dialog.FileName).ToLowerInvariant(),
+                    FileSize = info.Length, Description = $"AI 生成：{AiEditPrompt}",
+                    IsFavorite = false, DateAdded = DateTime.Now, DateModified = info.LastWriteTime
+                };
+                await _dataService.AddMediaFileAsync(mediaFile);
+                try { await GenerateThumbnailForFileAsync(mediaFile); } catch { }
+                await LoadDataAsync();
+                await LoadStatisticsAsync();
+
+                AiEditStatus = $"✅ 已保存并入库：{dialog.FileName}";
             }
             catch (Exception ex) { AiEditStatus = $"保存失败: {ex.Message}"; }
         }

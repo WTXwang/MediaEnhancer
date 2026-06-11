@@ -44,6 +44,18 @@ namespace MediaEnhancer.Models
         public long FileSize { get; set; }
 
         /// <summary>
+        /// 获取人类可读的文件大小（不持久化）。
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string FileSizeDisplay => FileSize switch
+        {
+            < 1024 => $"{FileSize} B",
+            < 1024 * 1024 => $"{FileSize / 1024.0:F1} KB",
+            < 1024 * 1024 * 1024 => $"{FileSize / (1024.0 * 1024):F1} MB",
+            _ => $"{FileSize / (1024.0 * 1024 * 1024):F2} GB"
+        };
+
+        /// <summary>
         /// 录制时是否应用了增强效果。
         /// </summary>
         public bool IsEnhanced { get; set; }
@@ -57,5 +69,11 @@ namespace MediaEnhancer.Models
         /// 录制创建时间。
         /// </summary>
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>归属用户 ID（外键）。</summary>
+        public int UserId { get; set; }
+
+        /// <summary>导航属性：归属用户。</summary>
+        public User? User { get; set; }
     }
 }

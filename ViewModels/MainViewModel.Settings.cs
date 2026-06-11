@@ -66,11 +66,12 @@ partial class MainViewModel
 
         private void SavePathConfig()
         {
-            var cfg = AppConfig.Load();
+            var appConfig = new AppConfig(_authService.CurrentUser?.Id ?? 0);
+            var cfg = appConfig.Load();
             cfg.RecordingPath = _recordingSavePath;
             cfg.EnhancementPath = _enhancementSavePath;
             cfg.ThumbnailPath = _thumbnailSavePath;
-            AppConfig.Save(cfg);
+            appConfig.Save(cfg);
         }
 
         // ============================================================

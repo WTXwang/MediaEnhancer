@@ -4,21 +4,44 @@ using System.Text.Json;
 namespace MediaEnhancer.Services;
 
 /// <summary>
-/// 应用配置持久化（单文件 JSON，启动加载，修改即存）。
+/// 应用配置持久化——按用户隔离，每个用户拥有独立的 JSON 配置文件。
+/// 文件命名：appsettings_{userId}.json（userId=0 为全局默认模板）。
 /// </summary>
-public static class AppConfig
+public class AppConfig
 {
-    private static string Path => System.IO.Path.Combine(
-        AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+    private readonly int _userId;
+    private string FilePath => System.IO.Path.Combine(
+        AppDomain.CurrentDomain.BaseDirectory,
+        _userId > 0 ? $"appsettings_{_userId}.json" : "appsettings.json");
 
-    public static AppSettings Load()
+    public AppConfig(int userId = 0)
+    {
+        _userId = userId;
+    }
+
+    public AppSettings Load()
     {
         try
         {
-            if (File.Exists(Path))
+            var path = FilePath;
+            // 如果用户配置文件不存在，从默认模板复制
+            if (!File.Exists(path) && _userId > 0)
             {
-                var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path)) ?? new();
-                // 解密 API 密钥供内存使用（磁盘上始终是密文）
+                var defaultPath = System.IO.Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                if (File.Exists(defaultPath))
+                {
+                    File.Copy(defaultPath, path);
+                    var copied = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path)) ?? new();
+                    copied.ChatKey = SecureStorage.Unprotect(copied.ChatKey);
+                    copied.EditKey = SecureStorage.Unprotect(copied.EditKey);
+                    return copied;
+                }
+            }
+
+            if (File.Exists(path))
+            {
+                var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path)) ?? new();
                 s.ChatKey = SecureStorage.Unprotect(s.ChatKey);
                 s.EditKey = SecureStorage.Unprotect(s.EditKey);
                 return s;
@@ -28,11 +51,10 @@ public static class AppConfig
         return new AppSettings();
     }
 
-    public static void Save(AppSettings s)
+    public void Save(AppSettings s)
     {
         try
         {
-            // 加密 API 密钥后再序列化到磁盘
             var toSave = new AppSettings
             {
                 ChatEndpoint = s.ChatEndpoint,
@@ -46,7 +68,7 @@ public static class AppConfig
                 EnhancementPath = s.EnhancementPath,
                 ThumbnailPath = s.ThumbnailPath
             };
-            File.WriteAllText(Path, JsonSerializer.Serialize(toSave));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(toSave));
         }
         catch { }
     }
@@ -54,18 +76,15 @@ public static class AppConfig
 
 public class AppSettings
 {
-    // AI 对话
     public string ChatEndpoint { get; set; } = "https://dashscope.aliyuncs.com/compatible-mode/v1";
     public string ChatKey { get; set; } = "";
     public string ChatModel { get; set; } = "qwen-plus";
 
-    // AI 编辑（生图）
     public string EditEndpoint { get; set; } = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
     public string EditKey { get; set; } = "";
     public string EditModel { get; set; } = "wanx2.0-t2i-turbo";
-    public string EditFormat { get; set; } = "auto"; // "openai" | "dashscope" | "auto"
+    public string EditFormat { get; set; } = "auto";
 
-    // 路径
     public string RecordingPath { get; set; } = "";
     public string EnhancementPath { get; set; } = "";
     public string ThumbnailPath { get; set; } = "";

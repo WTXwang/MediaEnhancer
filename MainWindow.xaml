@@ -343,6 +343,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- 应用标题 -->
@@ -481,8 +482,21 @@
                     </Button>
                 </StackPanel>
 
-                <!-- 底部版本信息 -->
-                <TextBlock Grid.Row="2"
+                <!-- 底部用户信息 -->
+                <StackPanel Grid.Row="2" Margin="20,0,20,16">
+                    <Border Background="#E8F0FE" CornerRadius="8" Padding="12,10">
+                        <StackPanel>
+                            <TextBlock Foreground="#2563EB" FontSize="11" FontWeight="SemiBold"
+                                       Text="👤 当前用户"/>
+                            <TextBlock Text="{Binding CurrentUserDisplayName}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="#0F172A" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- 版本信息 -->
+                <TextBlock Grid.Row="3"
                            Text="{Binding AppVersion, StringFormat='版本 {0}'}"
                            FontSize="11"
                            Foreground="#94A3B8"
@@ -519,106 +533,84 @@
 
                     <!-- 工具栏 -->
                     <Border Grid.Row="1"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Padding="20,16"
-                            Margin="0,0,0,20">
+                            Background="White" BorderBrush="#E2E8F0" BorderThickness="1"
+                            CornerRadius="10" Padding="20,16" Margin="0,0,0,20">
                         <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                            <!-- 第一行：搜索 + 筛选 -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <!-- 搜索框 -->
-                            <Border Grid.Column="0"
-                                    Background="#F8FAFC"
-                                    BorderBrush="#E2E8F0"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="10,0"
-                                    Width="220"
-                                    Margin="0,0,12,0">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="🔍"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,6,0"/>
-                                    <TextBox Grid.Column="1"
-                                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                             Background="Transparent"
-                                             BorderThickness="0"
-                                             Padding="0,7"
-                                             FontSize="13"
-                                             Foreground="#0F172A"/>
-                                </Grid>
-                            </Border>
+                                <Border Grid.Column="0" Background="#F8FAFC" BorderBrush="#E2E8F0"
+                                        BorderThickness="1" CornerRadius="6" Padding="10,0"
+                                        Margin="0,0,12,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="🔍" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBox Grid.Column="1"
+                                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="Transparent" BorderThickness="0" Padding="0,7"
+                                                 FontSize="13" Foreground="#0F172A"/>
+                                    </Grid>
+                                </Border>
 
-                            <!-- 类型筛选 -->
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{Binding TypeFilters}"
-                                      SelectedItem="{Binding FilterType}"
-                                      Style="{StaticResource ComboBoxStyle}"
-                                      Margin="0,0,12,0"/>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding TypeFilters}"
+                                          SelectedItem="{Binding FilterType}"
+                                          Style="{StaticResource ComboBoxStyle}" Margin="0,0,12,0"/>
 
-                            <!-- 收藏筛选 -->
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <CheckBox IsChecked="{Binding FilterFavoritesOnly}"
-                                          Margin="0,0,6,0"
+                                <CheckBox Grid.Column="2" IsChecked="{Binding FilterFavoritesOnly}"
+                                          Content="仅收藏" FontSize="13" Foreground="#475569"
                                           VerticalAlignment="Center"/>
-                                <TextBlock Text="仅收藏"
-                                           FontSize="13"
-                                           Foreground="#475569"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
+                            </Grid>
 
-                            <!-- 操作按钮组 -->
-                            <Button Grid.Column="3"
-                                    Content="📁 选择文件夹"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding SelectFolderCommand}"
-                                    Margin="0,0,8,0"/>
+                            <!-- 第二行：操作按钮 -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <Button Grid.Column="4"
-                                    Content="➕ 导入文件"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    Command="{Binding ImportFilesCommand}"
-                                    Margin="0,0,8,0"/>
+                                <Button Grid.Column="0" Content="📁 选择文件夹"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding SelectFolderCommand}"
+                                        Margin="0,0,8,0" Height="36"/>
 
-                            <Button Grid.Column="5"
-                                    Content="🗑 删除"
-                                    Style="{StaticResource DangerButtonStyle}"
-                                    Command="{Binding DeleteFileCommand}"
-                                    CommandParameter="{Binding SelectedFile}"
-                                    Margin="0,0,8,0"/>
+                                <Button Grid.Column="1" Content="➕ 导入文件"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Command="{Binding ImportFilesCommand}"
+                                        Margin="4,0,8,0" Height="36"/>
 
-                            <Button Grid.Column="6"
-                                    Content="🔄 刷新"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding RefreshCommand}"
-                                    Margin="0,0,8,0"/>
-                            <Button Grid.Column="7"
-                                    Content="🔍 校验"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding ValidateFilesCommand}"/>
-                        </Grid>
+                                <Button Grid.Column="2" Content="🗑 删除"
+                                        Style="{StaticResource DangerButtonStyle}"
+                                        Command="{Binding DeleteFileCommand}"
+                                        CommandParameter="{Binding SelectedFile}"
+                                        Margin="4,0,8,0" Height="36"/>
 
-                            <!-- 扫描/增强状态提示 -->
+                                <Button Grid.Column="3" Content="🔄 刷新"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding RefreshCommand}"
+                                        Margin="4,0,8,0" Height="36"/>
+
+                                <Button Grid.Column="4" Content="🔍 校验"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding ValidateFilesCommand}"
+                                        Margin="4,0,0,0" Height="36"/>
+                            </Grid>
+
+                            <!-- 扫描 / 增强状态提示 -->
                             <TextBlock Text="{Binding ScanProgress}" FontSize="12" Foreground="#2563EB"
-                                       Margin="0,6,0,0" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                       Margin="0,2,0,0"
+                                       Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
                                         Visibility="{Binding HasEnhanceProgress, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <TextBlock Text="{Binding EnhanceProgress}" FontSize="12" Foreground="#7C3AED"
                                            VerticalAlignment="Center"/>
@@ -627,13 +619,9 @@
                                         Padding="6,2" FontSize="11" Margin="10,0,0,0"/>
                             </StackPanel>
 
-                            <!-- 批量操作栏（固定位置） -->
-                            <Border Background="#F8FAFC"
-                                    BorderBrush="#E2E8F0"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="10,6"
-                                    Margin="0,6,0,0">
+                            <!-- 批量操作栏 -->
+                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1"
+                                    CornerRadius="6" Padding="10,8" Margin="0,8,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -641,9 +629,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Grid.Column="0"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,10,0"
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0"
                                                FontSize="12" Foreground="#64748B">
                                         <Run Text="批量操作  "/>
                                         <Run Text="{Binding SelectedFiles.Count, Mode=OneWay}"/>
@@ -661,10 +647,6 @@
                                                 IsEnabled="{Binding HasMultipleSelected}"/>
                                         <Button Content="🖼 缩略图" Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding BatchGenerateThumbnailsCommand}"
-                                                Padding="8,4" FontSize="11" Margin="0,0,4,0"
-                                                IsEnabled="{Binding HasMultipleSelected}"/>
-                                        <Button Content="✨ 增强" Style="{StaticResource PrimaryButtonStyle}"
-                                                Command="{Binding BatchEnhanceCommand}"
                                                 Padding="8,4" FontSize="11"
                                                 IsEnabled="{Binding HasMultipleSelected}"/>
                                     </StackPanel>
@@ -726,7 +708,7 @@
                         </DataGrid>
 
                         <!-- 浮层详情面板 -->
-                        <Border HorizontalAlignment="Right" Width="340"
+                        <Border HorizontalAlignment="Right" Width="350"
                                 Background="White" BorderBrush="#CBD5E1" BorderThickness="1,0,0,1"
                                 Visibility="{Binding ShowDetailPanel, Converter={StaticResource BoolToVisibilityConverter}}">
                             <Border.Effect>
@@ -764,66 +746,54 @@
                                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,12">
                                     <StackPanel>
 
-                                        <!-- 缩略图 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="12">
-                                            <Grid Height="160">
-                                                <Border Background="#F1F5F9" CornerRadius="6">
+                                        <!-- 缩略图 + 基本信息 -->
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10" Padding="14">
+                                            <StackPanel>
+                                                <Border Background="#F1F5F9" CornerRadius="6"
+                                                        Height="130" Margin="0,0,0,10">
                                                     <Image Source="{Binding SelectedFile.ThumbnailPath, Converter={StaticResource ThumbnailConverter}}"
-                                                           MaxWidth="160" MaxHeight="150" Stretch="Uniform"
+                                                           MaxWidth="140" MaxHeight="130" Stretch="Uniform"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
-                                            </Grid>
-                                        </Border>
-
-                                        <!-- 基本信息 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="14">
-                                            <StackPanel>
-                                                <TextBlock Text="基本信息" Style="{StaticResource SectionTitleStyle}"/>
+                                                <!-- 关键信息行 -->
                                                 <Grid>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                    </Grid.RowDefinitions>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="ID" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedFile.Id}" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="类型" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedFile.Type}" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="格式" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedFile.FileFormat}" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="大小" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="3" Grid.Column="1" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4">
-                                                        <Run Text="{Binding SelectedFile.FileSize, StringFormat=N0}"/><Run Text=" 字节"/></TextBlock>
-                                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="时长" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="4" Grid.Column="1" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4">
-                                                        <Run Text="{Binding SelectedFile.Duration}"/></TextBlock>
-                                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="分辨率" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="5" Grid.Column="1" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold" Margin="0,0,0,4">
-                                                        <Run Text="{Binding SelectedFile.Width}"/><Run Text=" x "/><Run Text="{Binding SelectedFile.Height}"/></TextBlock>
-                                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="收藏" FontSize="12" Foreground="#64748B"/>
-                                                    <CheckBox Grid.Row="6" Grid.Column="1"
-                                                              IsChecked="{Binding SelectedFile.IsFavorite}"
-                                                              ClickMode="Press"
-                                                              VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                    <TextBlock Grid.Column="0" Text="{Binding SelectedFile.Type}"
+                                                               FontSize="16" FontWeight="Bold" Foreground="#2563EB"
+                                                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock FontSize="12" Foreground="#475569">
+                                                            <Run Text="{Binding SelectedFile.FileFormat, Mode=OneWay}"/><Run Text="  ·  "/>
+                                                            <Run Text="{Binding SelectedFile.FileSizeDisplay, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                        <TextBlock FontSize="12" Foreground="#475569" Margin="0,2,0,0">
+                                                            <Run Text="{Binding SelectedFile.Width, Mode=OneWay}"/>
+                                                            <Run Text=" x "/>
+                                                            <Run Text="{Binding SelectedFile.Height, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                        <TextBlock FontSize="12" Foreground="#475569" Margin="0,2,0,0"
+                                                                   Text="{Binding SelectedFile.Duration, StringFormat='⏱ {0}'}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <!-- 收藏 + 播放 -->
+                                                <Grid Margin="0,10,0,0">
+                                                    <CheckBox IsChecked="{Binding SelectedFile.IsFavorite}"
+                                                              Content="收藏" FontSize="13" Foreground="#475569"
+                                                              HorizontalAlignment="Left"
                                                               Command="{Binding ToggleFavoriteCommand}"
                                                               CommandParameter="{Binding SelectedFile}"/>
-                                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="播放" FontSize="12" Foreground="#64748B"/>
-                                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SelectedFile.PlayCount}" FontSize="13" Foreground="#0F172A" FontWeight="SemiBold"/>
+                                                    <TextBlock HorizontalAlignment="Right" FontSize="13" Foreground="#64748B">
+                                                        <Run Text="▶ 播放 "/><Run Text="{Binding SelectedFile.PlayCount}"/><Run Text=" 次"/>
+                                                    </TextBlock>
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
 
                                         <!-- 简介 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="14">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10" Padding="14">
                                             <StackPanel>
                                                 <TextBlock Text="简介" Style="{StaticResource SectionTitleStyle}"/>
                                                 <TextBox Text="{Binding SelectedFile.Description, UpdateSourceTrigger=PropertyChanged}"
@@ -836,50 +806,59 @@
                                             </StackPanel>
                                         </Border>
 
-                                        <!-- 路径 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="14">
-                                            <StackPanel>
-                                                <TextBlock Text="文件路径" Style="{StaticResource SectionTitleStyle}"/>
-                                                <TextBlock Text="{Binding SelectedFile.FilePath}" FontSize="12" Foreground="#475569" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </Border>
-
                                         <!-- 操作按钮 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="14">
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10" Padding="14">
                                             <StackPanel>
-                                                <TextBlock Text="操作" Style="{StaticResource SectionTitleStyle}"/>
                                                 <Button Content="▶ 播放" Style="{StaticResource PrimaryButtonStyle}"
                                                         Command="{Binding PlayFileCommand}" CommandParameter="{Binding SelectedFile}"
-                                                        HorizontalAlignment="Stretch" Margin="0,0,0,8" Height="32"/>
-                                                <Rectangle Style="{StaticResource DividerStyle}"/>
+                                                        HorizontalAlignment="Stretch" Margin="0,0,0,6" Height="36" FontSize="14"/>
                                                 <Button Content="✨ 增强" Style="{StaticResource PrimaryButtonStyle}"
                                                         Command="{Binding EnhanceFileCommand}" CommandParameter="{Binding SelectedFile}"
                                                         IsEnabled="{Binding IsEnhancing, Converter={StaticResource InvertBoolConverter}}"
-                                                        HorizontalAlignment="Stretch" Margin="0,0,0,8" Height="32"/>
-                                                <Button Content="✏ 重命名" Style="{StaticResource SecondaryButtonStyle}"
-                                                        Command="{Binding RenameFileCommand}" CommandParameter="{Binding SelectedFile}"
-                                                        HorizontalAlignment="Stretch" Margin="0,0,0,8" Height="32"/>
-                                                <Button Content="🖼 缩略图" Style="{StaticResource SecondaryButtonStyle}"
-                                                        Command="{Binding SetThumbnailCommand}" CommandParameter="{Binding SelectedFile}"
-                                                        HorizontalAlignment="Stretch" Margin="0,0,0,8" Height="32"/>
-                                                <Rectangle Style="{StaticResource DividerStyle}"/>
+                                                        HorizontalAlignment="Stretch" Margin="0,0,0,6" Height="36" FontSize="14"/>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Button Grid.Column="0" Content="✏ 重命名"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding RenameFileCommand}"
+                                                            CommandParameter="{Binding SelectedFile}"
+                                                            Height="32" FontSize="12" Margin="0,0,4,0"/>
+                                                    <Button Grid.Column="1" Content="🖼 缩略图"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding SetThumbnailCommand}"
+                                                            CommandParameter="{Binding SelectedFile}"
+                                                            Height="32" FontSize="12" Margin="4,0,0,0"/>
+                                                </Grid>
                                                 <Button Content="🗑 删除" Style="{StaticResource DangerButtonStyle}"
                                                         Command="{Binding DeleteFileCommand}" CommandParameter="{Binding SelectedFile}"
-                                                        HorizontalAlignment="Stretch" Height="32"/>
+                                                        HorizontalAlignment="Stretch" Height="32" FontSize="12"/>
                                             </StackPanel>
                                         </Border>
 
-                                        <!-- 时间信息 -->
-                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12" Padding="14">
+                                        <!-- 路径 + 时间 -->
+                                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10" Padding="14">
                                             <StackPanel>
-                                                <TextBlock Text="时间信息" Style="{StaticResource SectionTitleStyle}"/>
-                                                <TextBlock FontSize="12" Foreground="#475569" Margin="0,0,0,4">
-                                                    <Run Text="导入时间："/><Run Text="{Binding SelectedFile.DateAdded, StringFormat=yyyy-MM-dd HH:mm}"/></TextBlock>
+                                                <TextBlock Text="文件路径" Style="{StaticResource SectionTitleStyle}"/>
+                                                <TextBox Text="{Binding SelectedFile.FilePath, Mode=OneWay}"
+                                                         FontSize="12" Foreground="#475569"
+                                                         Background="Transparent" BorderThickness="0"
+                                                         IsReadOnly="True" TextWrapping="Wrap" Padding="0"/>
+                                                <Rectangle Style="{StaticResource DividerStyle}" Margin="0,8"/>
+                                                <TextBlock FontSize="12" Foreground="#475569" Margin="0,0,0,2">
+                                                    <Run Text="导入时间：" Foreground="#94A3B8"/>
+                                                    <Run Text="{Binding SelectedFile.DateAdded, StringFormat='yyyy-MM-dd HH:mm', Mode=OneWay}"/>
+                                                </TextBlock>
                                                 <TextBlock FontSize="12" Foreground="#475569">
-                                                    <Run Text="修改时间："/><Run Text="{Binding SelectedFile.DateModified, StringFormat=yyyy-MM-dd HH:mm}"/></TextBlock>
+                                                    <Run Text="修改时间：" Foreground="#94A3B8"/>
+                                                    <Run Text="{Binding SelectedFile.DateModified, StringFormat='yyyy-MM-dd HH:mm', Mode=OneWay}"/>
+                                                </TextBlock>
                                             </StackPanel>
                                         </Border>
-
+                                        <!-- 底部留白，确保最后一张卡片内容不被截断 -->
+                                        <Rectangle Height="40"/>
                                     </StackPanel>
                                 </ScrollViewer>
                             </Grid>
@@ -1006,6 +985,55 @@
                                         </Grid>
                                         </StackPanel>
 
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 实时增强会话记录 -->
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="使用记录" Style="{StaticResource SectionTitleStyle}"/>
+                                        <TextBlock FontSize="12" Foreground="#94A3B8" Margin="0,0,0,12"
+                                                   Text="实时全屏增强会话记录"/>
+
+                                        <ItemsControl ItemsSource="{Binding RealtimeSessions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="8,6" Margin="0,0,0,4"
+                                                            Background="#F8FAFC" CornerRadius="6"
+                                                            BorderBrush="#E2E8F0" BorderThickness="1">
+                                                        <StackPanel>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock FontSize="12" FontWeight="SemiBold"
+                                                                           Foreground="#2563EB"
+                                                                           Text="{Binding MethodName}"/>
+                                                                <TextBlock FontSize="11" Foreground="#94A3B8"
+                                                                           Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                           Text="{Binding StartedAt, StringFormat='yyyy-MM-dd HH:mm'}"/>
+                                                            </StackPanel>
+                                                            <TextBlock FontSize="11" Foreground="#64748B"
+                                                                       Margin="0,2,0,0"
+                                                                       Text="{Binding DurationText}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- 空状态 -->
+                                        <TextBlock Text="暂无使用记录"
+                                                   FontSize="13" Foreground="#94A3B8"
+                                                   HorizontalAlignment="Center" Margin="0,8,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasRealtimeSessions}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1191,7 +1219,7 @@
                                                             <TextBlock Text="{Binding Duration}"
                                                                        FontSize="12" Foreground="#64748B"/>
                                                             <TextBlock Text=" · " FontSize="12" Foreground="#94A3B8"/>
-                                                            <TextBlock Text="{Binding FileSize, StringFormat='{}{0:N0} 字节'}"
+                                                            <TextBlock Text="{Binding FileSizeDisplay}"
                                                                        FontSize="12" Foreground="#64748B"/>
                                                             <TextBlock Text=" · " FontSize="12" Foreground="#94A3B8"/>
                                                             <TextBlock Text="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}"
@@ -1209,28 +1237,25 @@
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- ==================================================== -->
                 <!-- 页面 5：AI 对话                                          -->
                 <!-- ==================================================== -->
                 <Grid Visibility="{Binding SelectedPageIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=5}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="260"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- 左侧边栏 -->
-                    <Border Grid.Column="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0">
+                    <!-- 标题栏 -->
+                    <StackPanel Grid.Row="0" Margin="35,30,35,16">
                         <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <!-- 标题 -->
-                            <StackPanel Grid.Row="0" Margin="18,20,18,16">
-                                <TextBlock Text="AI 智能助手" FontSize="18" FontWeight="Bold" Foreground="#0F172A"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="AI 对话" Style="{StaticResource PageTitleStyle}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                     <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center">
                                         <Ellipse.Style>
                                             <Style TargetType="Ellipse">
@@ -1246,108 +1271,52 @@
                                     <TextBlock Text="{Binding ChatStatusText}" FontSize="12" Foreground="#64748B"/>
                                 </StackPanel>
                             </StackPanel>
-
-                            <!-- 文件选择（下拉） -->
-                            <StackPanel Grid.Row="1" Margin="14,0">
-                                <TextBlock Text="上下文文件" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="#94A3B8" Margin="0,0,0,6"/>
-                                <Button x:Name="FileDropdownBtn" Content="📁 选择文件…"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        HorizontalAlignment="Stretch" Height="30" FontSize="11"
-                                        Click="FileDropdown_Click"/>
-                                <Popup x:Name="FilePopup" PlacementTarget="{Binding ElementName=FileDropdownBtn}"
-                                       Placement="Bottom" Width="220" MaxHeight="300"
-                                       StaysOpen="False" PopupAnimation="Slide">
-                                    <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1"
-                                            CornerRadius="8" Padding="8" MaxHeight="300">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <ItemsControl ItemsSource="{Binding MediaFilesList}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                                  Content="{Binding Title}" FontSize="12"
-                                                                  Foreground="#475569" Margin="4,3"/>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </Border>
-                                </Popup>
-                                <TextBlock FontSize="10" Foreground="#94A3B8" Margin="0,4,0,0"
-                                           Text="{Binding MediaFilesList.Count, StringFormat='共 {0} 个文件'}"/>
-                            </StackPanel>
-
-                            <!-- 预设按钮 + 底部 -->
-                            <StackPanel Grid.Row="2" Margin="14,8,14,16">
-                                <TextBlock Text="快捷提示" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="#94A3B8" Margin="0,0,0,6"/>
-                                <Button Content="📝 AI 简介" Style="{StaticResource SecondaryButtonStyle}"
-                                        Command="{Binding ApplyAiPresetCommand}" CommandParameter="简介"
-                                        HorizontalAlignment="Stretch" Height="30" FontSize="11" Margin="0,0,0,4"/>
-                                <Button Content="📊 数据摘要" Style="{StaticResource SecondaryButtonStyle}"
-                                        Command="{Binding ApplyAiPresetCommand}" CommandParameter="数据"
-                                        HorizontalAlignment="Stretch" Height="30" FontSize="11" Margin="0,0,0,8"/>
-                                <Button Content="🗑 清空对话" Style="{StaticResource SecondaryButtonStyle}"
-                                        Command="{Binding ClearAiChatCommand}"
-                                        HorizontalAlignment="Stretch" Height="30" FontSize="11"/>
-                            </StackPanel>
+                            <Button Grid.Column="1" Content="🗑 清空" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding ClearAiChatCommand}"
+                                    Height="32" FontSize="12" Padding="10,4" VerticalAlignment="Bottom"/>
                         </Grid>
-                    </Border>
+                    </StackPanel>
 
-                    <!-- 右侧对话主区域 -->
-                    <Grid Grid.Column="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- 消息列表 -->
-                        <ScrollViewer Grid.Row="0" x:Name="AiChatScroller"
-                                      VerticalScrollBarVisibility="Auto" Padding="0,16">
-                            <ItemsControl ItemsSource="{Binding AiMessages}" Margin="0">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,0,0,24">
-                                            <!-- AI 消息：头像在左 -->
+                    <!-- 消息列表（全宽） -->
+                    <ScrollViewer Grid.Row="1" x:Name="AiChatScroller"
+                                  VerticalScrollBarVisibility="Auto" Padding="35,0">
+                        <ItemsControl ItemsSource="{Binding AiMessages}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,20">
+                                        <!-- AI / thinking：头像在左 -->
+                                        <Grid>
                                             <Grid.Style>
                                                 <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Visible"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Role}" Value="user">
-                                                            <Setter Property="Margin" Value="0,0,0,16"/>
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Grid.Style>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*" MaxWidth="700"/>
+                                                <ColumnDefinition Width="*" MaxWidth="650"/>
                                             </Grid.ColumnDefinitions>
-
-                                            <!-- 头像 -->
                                             <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
-                                                    VerticalAlignment="Top" Margin="16,0,12,0">
+                                                    VerticalAlignment="Top" Margin="0,0,12,0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Background" Value="#DBEAFE"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Role}" Value="user">
-                                                                <Setter Property="Background" Value="#E2E8F0"/>
-                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding Role}" Value="thinking">
                                                                 <Setter Property="Background" Value="#FEF3C7"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Border.Style>
-                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           FontSize="14">
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="Text" Value="🤖"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Role}" Value="user">
-                                                                    <Setter Property="Text" Value="👤"/>
-                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding Role}" Value="thinking">
                                                                     <Setter Property="Text" Value="⏳"/>
                                                                 </DataTrigger>
@@ -1356,21 +1325,13 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                             </Border>
-
-                                            <!-- 消息内容 -->
                                             <StackPanel Grid.Column="1">
-                                                <TextBlock Margin="0,0,0,4">
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="Text" Value="AI 助手"/>
-                                                            <Setter Property="FontSize" Value="12"/>
-                                                            <Setter Property="FontWeight" Value="SemiBold"/>
                                                             <Setter Property="Foreground" Value="#2563EB"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Role}" Value="user">
-                                                                    <Setter Property="Text" Value="你"/>
-                                                                    <Setter Property="Foreground" Value="#64748B"/>
-                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding Role}" Value="thinking">
                                                                     <Setter Property="Text" Value="正在思考"/>
                                                                     <Setter Property="Foreground" Value="#D97706"/>
@@ -1380,37 +1341,86 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                                 <Border Background="White" BorderBrush="#E2E8F0"
-                                                        BorderThickness="1" CornerRadius="12"
-                                                        Padding="16,12">
+                                                        BorderThickness="1" CornerRadius="12" Padding="16,12">
                                                     <StackPanel>
-                                                        <ContentControl Content="{Binding Content,
-                                                            Converter={StaticResource MarkdownTextConverter}}"/>
+                                                        <ContentControl Content="{Binding Content, Converter={StaticResource MarkdownTextConverter}}"/>
                                                         <TextBlock Margin="0,8,0,0">
                                                             <Hyperlink Click="CopyMessage_Click" Tag="{Binding Content}"
-                                                                       Foreground="#94A3B8" FontSize="11"
-                                                                       TextDecorations="None">
-                                                                📋 复制
-                                                            </Hyperlink>
+                                                                       Foreground="#94A3B8" FontSize="11" TextDecorations="None">📋 复制</Hyperlink>
                                                         </TextBlock>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                         </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
 
-                        <!-- 底部输入栏 -->
-                        <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0">
-                            <Grid Margin="16,12">
+                                        <!-- 用户：右对齐 -->
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Role}" Value="user">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                                <StackPanel MaxWidth="450">
+                                                    <TextBlock Text="你" FontSize="12" FontWeight="SemiBold"
+                                                               Foreground="#64748B" HorizontalAlignment="Right"
+                                                               Margin="0,0,12,4"/>
+                                                    <Border Background="#DBEAFE" BorderBrush="#BFDBFE"
+                                                            BorderThickness="1" CornerRadius="12" Padding="16,12">
+                                                        <StackPanel>
+                                                            <ContentControl Content="{Binding Content, Converter={StaticResource MarkdownTextConverter}}"/>
+                                                            <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right">
+                                                                <Hyperlink Click="CopyMessage_Click" Tag="{Binding Content}"
+                                                                           Foreground="#94A3B8" FontSize="11" TextDecorations="None">📋 复制</Hyperlink>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </StackPanel>
+                                                <Border Width="32" Height="32" CornerRadius="16"
+                                                        Background="#E2E8F0" VerticalAlignment="Top"
+                                                        Margin="12,0,0,0">
+                                                    <TextBlock Text="👤" FontSize="14"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- 底部输入 + 预设 -->
+                    <Border Grid.Row="2" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0">
+                        <StackPanel Margin="35,12,35,12">
+                            <!-- 输入行 -->
+                            <Grid>
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0" Background="#F8FAFC" BorderBrush="#E2E8F0"
-                                        BorderThickness="1" CornerRadius="10">
+                                <Button x:Name="FileDropdownBtn" Grid.Column="0" Content="＋"
+                                        Width="38" Height="38" FontSize="20" FontWeight="Bold"
+                                        Foreground="#64748B" Background="#F1F5F9"
+                                        BorderThickness="0" Cursor="Hand"
+                                        Click="FileDropdown_Click" ToolTip="选择上下文文件"
+                                        VerticalAlignment="Center"/>
+
+                                <TextBlock Grid.Column="1" Margin="6,0,10,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12" Foreground="#64748B"
+                                           Text="{Binding SelectedAiFileCount, StringFormat='已选 {0}'}"/>
+
+                                <Border Grid.Column="2" Background="#F8FAFC" BorderBrush="#CBD5E1"
+                                        BorderThickness="1" CornerRadius="8">
                                     <TextBox Text="{Binding AiInputText, UpdateSourceTrigger=PropertyChanged}"
                                              Padding="14,10" BorderThickness="0" Background="Transparent"
                                              FontSize="14" Foreground="#0F172A"
@@ -1418,13 +1428,56 @@
                                              KeyDown="AiInput_KeyDown"/>
                                 </Border>
 
-                                <Button Grid.Column="1" Content="发送" Style="{StaticResource PrimaryButtonStyle}"
+                                <Button Grid.Column="3" Content="发送" Style="{StaticResource PrimaryButtonStyle}"
                                         Command="{Binding SendAiMessageCommand}"
-                                        Width="64" Height="38" Margin="10,0,0,0"
+                                        Width="64" Height="38" Margin="8,0,0,0"
                                         FontSize="13" FontWeight="SemiBold"/>
                             </Grid>
-                        </Border>
-                    </Grid>
+
+                            <Popup x:Name="FilePopup" PlacementTarget="{Binding ElementName=FileDropdownBtn}"
+                                   Placement="Top" HorizontalOffset="0" Width="260" MaxHeight="350"
+                                   StaysOpen="False" PopupAnimation="Slide">
+                                <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1"
+                                        CornerRadius="10" Padding="10" MaxHeight="350">
+                                    <Border.Effect>
+                                        <DropShadowEffect ShadowDepth="4" Color="#000000" Opacity="0.12" BlurRadius="12"/>
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Text="选择上下文文件" FontSize="12"
+                                                   FontWeight="SemiBold" Foreground="#475569"
+                                                   Margin="4,0,0,8"/>
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding MediaFilesList}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                  Content="{Binding Title}" FontSize="12"
+                                                                  Foreground="#475569" Margin="2,3"
+                                                                  Checked="FileCheckBox_Changed"
+                                                                  Unchecked="FileCheckBox_Changed"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Popup>
+
+                            <!-- 预设快捷操作 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="📝 AI 简介" Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding ApplyAiPresetCommand}" CommandParameter="简介"
+                                        Height="28" FontSize="12" Padding="8,4" Margin="0,0,8,0"/>
+                                <Button Content="📊 数据摘要" Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding ApplyAiPresetCommand}" CommandParameter="数据"
+                                        Height="28" FontSize="12" Padding="8,4" Margin="0,0,8,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
                 <!-- ==================================================== -->
@@ -1840,11 +1893,42 @@
                                         Margin="0,0,0,10">
                                     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                                                   VerticalScrollBarVisibility="Auto">
-                                        <Image Source="{Binding EnhancedPreview}"
-                                               Stretch="Uniform"
-                                               MaxWidth="500" MaxHeight="400"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
+                                        <Grid>
+                                            <Image Source="{Binding EnhancedPreview}"
+                                                   Stretch="Uniform"
+                                                   MaxWidth="500" MaxHeight="400"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                            <!-- 增强预览加载中的提示 -->
+                                            <Border Background="#F8FAFC" CornerRadius="8" Padding="24,16"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <!-- 进度非空 且 预览为空时显示 -->
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding HasEnhanceProgress}" Value="True"/>
+                                                                    <Condition Binding="{Binding EnhancedPreview}" Value="{x:Null}"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="⏳" FontSize="32"
+                                                               HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBlock Text="{Binding EnhanceProgress}" FontSize="14"
+                                                               Foreground="#7C3AED" FontWeight="SemiBold"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="增强处理中，请耐心等待…" FontSize="12"
+                                                               Foreground="#94A3B8"
+                                                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
                                     </ScrollViewer>
                                 </Border>
 
@@ -1895,6 +1979,62 @@
                                         <TextBlock Text="💡 提示" FontSize="13" FontWeight="SemiBold" Foreground="#7C3AED" Margin="0,0,0,6"/>
                                         <TextBlock FontSize="12" Foreground="#6D28D9" TextWrapping="Wrap"
                                                    Text="• 深度学习增强耗时较长，视频增强请耐心等待&#x0a;• 实时全屏增强请前往「实时增强」页面，仅支持轻量级方法"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 增强历史记录 -->
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="增强记录" Style="{StaticResource SectionTitleStyle}"/>
+                                        <TextBlock FontSize="12" Foreground="#94A3B8" Margin="0,0,0,12"
+                                                   Text="最近 50 条增强历史"/>
+
+                                        <!-- 记录列表 -->
+                                        <ItemsControl ItemsSource="{Binding EnhancementLogs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="8,6" Margin="0,0,0,4"
+                                                            Background="#F8FAFC" CornerRadius="6"
+                                                            BorderBrush="#E2E8F0" BorderThickness="1">
+                                                        <StackPanel>
+                                                            <!-- 方法名 + 时间 -->
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock FontSize="12" FontWeight="SemiBold"
+                                                                           Foreground="#7C3AED"
+                                                                           Text="{Binding MethodName}"/>
+                                                                <TextBlock FontSize="11" Foreground="#94A3B8"
+                                                                           Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                           Text="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}"/>
+                                                            </StackPanel>
+                                                            <!-- 源文件 -->
+                                                            <TextBlock FontSize="11" Foreground="#64748B"
+                                                                       Margin="0,2,0,0"
+                                                                       TextTrimming="CharacterEllipsis">
+                                                                <Run Text="源文件："/>
+                                                                <Run Text="{Binding MediaFile.Title}"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- 空状态 -->
+                                        <TextBlock Text="暂无增强记录"
+                                                   FontSize="13" Foreground="#94A3B8"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="0,8,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasEnhancementLogs}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1969,15 +2109,15 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- 卡片4：增强次数 -->
+                                <!-- 卡片4：音频数量 -->
                                 <Border Grid.Row="1" Grid.Column="0"
                                         Style="{StaticResource CardStyle}"
                                         Margin="0,0,10,10">
                                     <StackPanel>
-                                        <TextBlock Text="✨" FontSize="28" Margin="0,0,0,8"/>
-                                        <TextBlock Text="{Binding EnhancementCount}"
-                                                   FontSize="36" FontWeight="Bold" Foreground="#7C3AED"/>
-                                        <TextBlock Text="文件增强次数" FontSize="14" Foreground="#64748B" Margin="0,4,0,0"/>
+                                        <TextBlock Text="🎵" FontSize="28" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding AudioCount}"
+                                                   FontSize="36" FontWeight="Bold" Foreground="#8B5CF6"/>
+                                        <TextBlock Text="音频数量" FontSize="14" Foreground="#64748B" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
 
@@ -2028,59 +2168,83 @@
                                         <TextBlock Text="收藏数" FontSize="14" Foreground="#64748B" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
+
+                                <!-- 卡片9：增强次数 -->
+                                <Border Grid.Row="2" Grid.Column="2"
+                                        Style="{StaticResource CardStyle}"
+                                        Margin="10,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="✨" FontSize="28" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding EnhancementCount}"
+                                                   FontSize="36" FontWeight="Bold" Foreground="#7C3AED"/>
+                                        <TextBlock Text="文件增强次数" FontSize="14" Foreground="#64748B" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
                             </Grid>
 
-                            <!-- 快捷操作区（居中） -->
-                            <Border Style="{StaticResource CardStyle}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="⚡ 快速入口"
-                                               FontSize="15"
-                                               FontWeight="SemiBold"
-                                               Foreground="#0F172A"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,0,0,4"/>
-                                    <TextBlock Text="一键跳转到各功能模块"
-                                               FontSize="12"
-                                               Foreground="#64748B"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,0,0,14"/>
+                            <!-- 快捷操作区 -->
+                            <Border Style="{StaticResource CardStyle}" Padding="20,16">
+                                <StackPanel>
+                                    <TextBlock Text="⚡ 快速入口" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="#0F172A" Margin="0,0,0,12"/>
 
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button Content="🗂 文件管理"
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Row="0" Grid.Column="0" Content="📂 文件管理"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding ChangePageCommand}"
-                                                CommandParameter="1"
-                                                Margin="0,0,8,0"/>
-                                        <Button Content="✨ 实时增强"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="1"
+                                                Margin="0,0,6,6" Height="36"/>
+                                        <Button Grid.Row="0" Grid.Column="1" Content="🔧 离线增强"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding ChangePageCommand}"
-                                                CommandParameter="3"
-                                                Margin="0,0,8,0"/>
-                                        <Button Content="⏺ 屏幕录制"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="2"
+                                                Margin="3,0,6,6" Height="36"/>
+                                        <Button Grid.Row="0" Grid.Column="2" Content="✨ 实时增强"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding ChangePageCommand}"
-                                                CommandParameter="4"
-                                                Margin="0,0,8,0"/>
-                                        <Button Content="🤖 AI 总结"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="3"
+                                                Margin="3,0,6,6" Height="36"/>
+                                        <Button Grid.Row="0" Grid.Column="3" Content="⏺ 屏幕录制"
+                                                Style="{StaticResource SecondaryButtonStyle}"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="4"
+                                                Margin="3,0,0,6" Height="36"/>
+
+                                        <Button Grid.Row="1" Grid.Column="0" Content="💬 AI 对话"
                                                 Style="{StaticResource PrimaryButtonStyle}"
-                                                Command="{Binding GoToAISummaryCommand}"
-                                                Margin="0,0,8,0"/>
-                                        <Button Content="⚙ 系统设置"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="5"
+                                                Margin="0,0,6,0" Height="36"/>
+                                        <Button Grid.Row="1" Grid.Column="1" Content="🎨 AI 编辑"
+                                                Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="6"
+                                                Margin="3,0,6,0" Height="36"/>
+                                        <Button Grid.Row="1" Grid.Column="2" Content="⚙ 系统设置"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding ChangePageCommand}"
-                                                CommandParameter="6"
-                                                Margin="0,0,8,0"/>
-                                        <Button Content="🔄 刷新数据"
+                                                Command="{Binding ChangePageCommand}" CommandParameter="7"
+                                                Margin="3,0,6,0" Height="36"/>
+                                        <Button Grid.Row="1" Grid.Column="3" Content="🔄 刷新"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding RefreshStatisticsCommand}"
-                                                Margin="0,0,8,0"/>
+                                                Command="{Binding RefreshCommand}"
+                                                Margin="3,0,0,0" Height="36"/>
+                                    </Grid>
+
+                                    <Rectangle Style="{StaticResource DividerStyle}" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Button Content="📦 检查依赖"
                                                 Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding CheckDependenciesCommand}"
-                                                Margin="0,0,8,0"/>
+                                                Margin="0,0,8,0" Height="32" FontSize="12" Padding="10,4"/>
                                         <Button Content="🗑 清理缓存"
                                                 Style="{StaticResource SecondaryButtonStyle}"
-                                                Command="{Binding ClearThumbnailCacheCommand}"/>
+                                                Command="{Binding ClearThumbnailCacheCommand}"
+                                                Height="32" FontSize="12" Padding="10,4"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>

@@ -36,6 +36,12 @@ partial class MainViewModel
         private int _videoCount = 0;
 
         /// <summary>
+        /// 音频文件数量。
+        /// </summary>
+        [ObservableProperty]
+        private int _audioCount = 0;
+
+        /// <summary>
         /// 已执行的文件增强次数。
         /// </summary>
         [ObservableProperty]
@@ -76,15 +82,15 @@ partial class MainViewModel
         private async Task LoadStatisticsAsync()
         {
             TotalFileCount = await _dataService.GetTotalCountAsync();
-            var (imageCount, videoCount) = await _dataService.GetTypeCountAsync();
+            var (imageCount, videoCount, audioCount) = await _dataService.GetTypeCountAsync();
             ImageCount = imageCount;
             VideoCount = videoCount;
+            AudioCount = audioCount;
             EnhancementCount = await _dataService.GetEnhancementCountAsync();
             RecordingCount = await _dataService.GetRecordingCountAsync();
             TotalPlayCount = await _dataService.GetTotalPlayCountAsync();
             FavoriteCount = await _dataService.GetFavoriteCountAsync();
-            // 实时增强使用次数暂未实现对应数据表，保留为 0
-            RealtimeEnhanceCount = 0;
+            RealtimeEnhanceCount = await _dataService.GetRealtimeSessionCountAsync();
         }
 
         /// <summary>
@@ -218,6 +224,6 @@ partial class MainViewModel
         [RelayCommand]
         private void GoToAISummary()
         {
-            SelectedPageIndex = 4;
+            SelectedPageIndex = 5;
         }
 }

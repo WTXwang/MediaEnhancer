@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-D:\vs_repo\repo1\MediaEnhancer\obj\Debug\net10.0-windows\
+D:\作业们\大三下\window编程\MediaEnhancer\obj\Debug\net10.0-windows\
 MediaEnhancer
 none
 false
 TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
-D:\vs_repo\repo1\MediaEnhancer\App.xaml
-71075964538
+D:\作业们\大三下\window编程\MediaEnhancer\App.xaml
+81263284478
 3-1888005509
-631377122790
-2431601826615
-MainWindow.xaml;Views\DeleteConfirmDialog.xaml;Views\FileDetailWindow.xaml;Views\FullscreenEnhanceWindow.xaml;Views\ImageViewerWindow.xaml;Views\InputDialog.xaml;Views\MediaPlayerWindow.xaml;
+67-1549462919
+243-17421890
+MainWindow.xaml;Views\DeleteConfirmDialog.xaml;Views\FileDetailWindow.xaml;Views\FullscreenEnhanceWindow.xaml;Views\ImageViewerWindow.xaml;Views\InputDialog.xaml;Views\LoginWindow.xaml;Views\MediaPlayerWindow.xaml;
 
 False
 

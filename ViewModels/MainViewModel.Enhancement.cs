@@ -17,6 +17,26 @@ namespace MediaEnhancer.ViewModels;
 partial class MainViewModel
 {
         // ============================================================
+        // 增强记录
+        // ============================================================
+
+        /// <summary>增强历史记录列表。</summary>
+        public ObservableCollection<EnhancementLog> EnhancementLogs { get; } = new();
+
+        /// <summary>是否有增强记录。</summary>
+        public bool HasEnhancementLogs => EnhancementLogs.Count > 0;
+
+        /// <summary>加载增强历史记录。</summary>
+        private async Task LoadEnhancementLogsAsync()
+        {
+            var logs = await _dataService.GetEnhancementLogsAsync(50);
+            EnhancementLogs.Clear();
+            foreach (var log in logs)
+                EnhancementLogs.Add(log);
+            OnPropertyChanged(nameof(HasEnhancementLogs));
+        }
+
+        // ============================================================
         // 实时增强面板 — 方法选择（仅限实时方法）
         // ============================================================
 
@@ -72,7 +92,7 @@ partial class MainViewModel
         }
 
         // ============================================================
-        // 离线增强方法选择（文件右键增强 / 批量增强 / 视频增强用）
+        // 离线增强方法选择（文件右键增强 / 视频增强用）
         // ============================================================
 
         /// <summary>
@@ -85,6 +105,32 @@ partial class MainViewModel
         /// 离线增强可选方法列表（实时 + ONNX，全部可选）。
         /// </summary>
         public List<string> OfflineEnhancementMethods => _registry.MethodNames.ToList();
+
+        /// <summary>
+        /// 离线方法变更时刷新预览图。
+        /// </summary>
+        partial void OnSelectedOfflineMethodNameChanged(string value)
+        {
+            _ = RefreshOfflinePreviewAsync();
+        }
+
+        /// <summary>
+        /// 用当前选中的离线方法刷新已加载的预览图。
+        /// </summary>
+        private async Task RefreshOfflinePreviewAsync()
+        {
+            if (OriginalPreview == null) return;
+            var offlineMethod = GetSelectedOfflineMethod();
+            if (offlineMethod is IOnnxEnhancement onnx)
+            {
+                EnhanceProgress = $"正在用 {offlineMethod.Name} 刷新预览...";
+                EnhancedPreview = null;
+                EnhancedPreview = await onnx.EnhanceAsync(OriginalPreview);
+                EnhanceProgress = "";
+            }
+            else if (offlineMethod != null)
+                EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
+        }
 
         /// <summary>
         /// 根据 SelectedOfflineMethodName 获取对应的增强方法实例。
@@ -147,6 +193,29 @@ partial class MainViewModel
         }
 
         // ============================================================
+        // 实时增强会话记录（持久化到数据库）
+        // ============================================================
+
+        /// <summary>实时全屏增强会话记录列表。</summary>
+        public ObservableCollection<Models.RealtimeSession> RealtimeSessions { get; } = new();
+
+        /// <summary>是否有会话记录。</summary>
+        public bool HasRealtimeSessions => RealtimeSessions.Count > 0;
+
+        /// <summary>当前正在进行的会话（持久化后的实体，用于 Stop 时更新）。</summary>
+        private Models.RealtimeSession? _currentRealtimeSession;
+
+        /// <summary>从数据库加载会话记录（进入实时增强页面时调用）。</summary>
+        private async Task LoadRealtimeSessionsAsync()
+        {
+            var sessions = await _dataService.GetRealtimeSessionsAsync(50);
+            RealtimeSessions.Clear();
+            foreach (var s in sessions)
+                RealtimeSessions.Add(s);
+            OnPropertyChanged(nameof(HasRealtimeSessions));
+        }
+
+        // ============================================================
         // 全屏实时增强
         // ============================================================
 
@@ -156,7 +225,7 @@ partial class MainViewModel
         /// 启动全屏实时增强——以透明覆盖窗口形式增强整个屏幕画面。
         /// </summary>
         [RelayCommand]
-        private void StartFullscreenEnhance()
+        private async Task StartFullscreenEnhance()
         {
             if (_fullscreenWindow != null) return;
 
@@ -177,7 +246,6 @@ partial class MainViewModel
                 _fullscreenWindow = new Views.FullscreenEnhanceWindow();
                 _fullscreenWindow.Stopped += OnFullscreenStopped;
 
-                // 从当前参数构建参数字典
                 var parameters = new Dictionary<string, double>();
                 foreach (var p in LinearStretch.Parameters)
                     parameters[p.Key] = p.Value;
@@ -195,6 +263,16 @@ partial class MainViewModel
                 }
 
                 IsEnhancementEnabled = true;
+
+                // 持久化：写入会话开始记录
+                _currentRealtimeSession = await _dataService.AddRealtimeSessionAsync(
+                    new Models.RealtimeSession
+                    {
+                        MethodName = method.Name,
+                        StartedAt = DateTime.Now
+                    });
+                RealtimeSessions.Insert(0, _currentRealtimeSession);
+                OnPropertyChanged(nameof(HasRealtimeSessions));
             }
             catch (Exception ex)
             {
@@ -206,10 +284,30 @@ partial class MainViewModel
             }
         }
 
-        private void OnFullscreenStopped()
+        private async void OnFullscreenStopped()
         {
+            // 持久化：写入会话结束时间和持续时长
+            if (_currentRealtimeSession != null)
+            {
+                _currentRealtimeSession.StoppedAt = DateTime.Now;
+                _currentRealtimeSession.DurationSeconds =
+                    (_currentRealtimeSession.StoppedAt.Value - _currentRealtimeSession.StartedAt).TotalSeconds;
+                await _dataService.UpdateRealtimeSessionAsync(_currentRealtimeSession);
+                // 刷新列表中的显示
+                var idx = RealtimeSessions.IndexOf(_currentRealtimeSession);
+                if (idx >= 0)
+                {
+                    RealtimeSessions.RemoveAt(idx);
+                    RealtimeSessions.Insert(idx, _currentRealtimeSession);
+                }
+                _currentRealtimeSession = null;
+            }
+
             _fullscreenWindow = null;
             IsEnhancementEnabled = false;
+
+            // 刷新仪表盘实时增强计数
+            _ = LoadStatisticsAsync();
         }
 
         /// <summary>
@@ -247,7 +345,36 @@ partial class MainViewModel
                 bitmap.Freeze();
 
                 OriginalPreview = bitmap;
-                EnhancedPreview = LinearStretch.Enhance(bitmap);
+                EnhancedPreview = null; // 先清空，触发"加载中"的空状态
+
+                // 根据当前所在页面选择对应的方法生成预览
+                if (SelectedPageIndex == 3) // 实时增强页面
+                {
+                    // 使用实时增强方法
+                    if (_registry.Current is IOnnxEnhancement onnxRealtime)
+                    {
+                        EnhanceProgress = "正在生成增强预览...";
+                        EnhancedPreview = await onnxRealtime.EnhanceAsync(bitmap);
+                        EnhanceProgress = "";
+                    }
+                    else
+                        EnhancedPreview = LinearStretch.Enhance(bitmap);
+                }
+                else // 离线增强页面（或其他）
+                {
+                    // 使用离线增强方法
+                    var offlineMethod = GetSelectedOfflineMethod();
+                    if (offlineMethod is IOnnxEnhancement onnxOffline)
+                    {
+                        EnhanceProgress = $"正在用 {offlineMethod.Name} 生成预览...";
+                        EnhancedPreview = await onnxOffline.EnhanceAsync(bitmap);
+                        EnhanceProgress = "";
+                    }
+                    else if (offlineMethod != null)
+                        EnhancedPreview = LinearStretch.Enhance(bitmap);
+                    else
+                        EnhancedPreview = LinearStretch.Enhance(bitmap);
+                }
             }
             catch (Exception ex)
             {
@@ -265,7 +392,13 @@ partial class MainViewModel
             LinearStretch.Contrast = 1.0;
             LinearStretch.Brightness = 0;
             if (OriginalPreview != null)
-                EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
+            {
+                // 根据当前页面使用正确方法刷新
+                if (SelectedPageIndex == 3) // 实时增强页面
+                    EnhancedPreview = LinearStretch.Enhance(OriginalPreview);
+                else
+                    _ = RefreshOfflinePreviewAsync();
+            }
         }
 
         /// <summary>增强进度文本。</summary>
@@ -307,13 +440,16 @@ partial class MainViewModel
                     return;
                 }
 
+                // 使用离线增强方法选择器中的方法（而非实时方法）
+                var offlineMethod = GetSelectedOfflineMethod();
+                var method = (offlineMethod as IRealTimeEnhancer) ?? (IRealTimeEnhancer)LinearStretch;
+                var methodName = offlineMethod?.Name ?? "线性拉伸";
+
                 IsEnhancing = true;
                 _enhanceCts = new CancellationTokenSource();
 
                 try
                 {
-                    var method = _registry.Current
-                        ?? (IRealTimeEnhancer)LinearStretch; // fallback
                     var eParams = new Dictionary<string, double>();
                     foreach (var p in method.Parameters)
                         eParams[p.Key] = p.Value;
@@ -321,9 +457,9 @@ partial class MainViewModel
                     var saveDir = EnhancementSavePath;
                     Directory.CreateDirectory(saveDir);
 
-                    EnhanceProgress = "正在增强视频...";
+                    EnhanceProgress = $"正在用 {methodName} 增强视频...";
                     var progress = new Progress<(int current, int total)>(p =>
-                        EnhanceProgress = $"正在增强视频... {p.current}/{p.total} 帧");
+                        EnhanceProgress = $"正在增强视频... {p.current}/{p.total} 帧（{methodName}）");
 
                     var outputPath = await enhancer.EnhanceAsync(file.FilePath, saveDir, progress,
                         _enhanceCts.Token);
@@ -344,30 +480,20 @@ partial class MainViewModel
                     }
 
                     var info = new FileInfo(outputPath);
-                    var newFile = new MediaFile
-                    {
-                        Title = Path.GetFileNameWithoutExtension(outputPath),
-                        FilePath = outputPath,
-                        Type = "视频",
-                        FileFormat = ".mp4",
-                        FileSize = info.Length,
-                        Description = $"由「{file.Title}」增强生成",
-                        SourceFileId = file.Id,
-                        IsFavorite = false,
-                        DateAdded = DateTime.Now,
-                        DateModified = DateTime.Now
-                    };
-                    await _dataService.AddMediaFileAsync(newFile);
-                    try { await _dataService.AddEnhancementLogAsync(new EnhancementLog { MediaFileId = file.Id, MethodName = method.Name, OutputPath = outputPath, ParametersJson = BuildEnhancementParamsJson(), CreatedAt = DateTime.Now }); } catch { }
-                    await LoadDataAsync();
-                    await LoadStatisticsAsync();
+                    // 复用标准导入流程（含缩略图生成）
+                    await ImportFilePathsAsync(new[] { outputPath },
+                        $"由「{file.Title}」增强生成", file.Id);
+                    try { await _dataService.AddEnhancementLogAsync(new EnhancementLog { MediaFileId = file.Id, MethodName = methodName, OutputPath = outputPath, ParametersJson = BuildEnhancementParamsJson(), CreatedAt = DateTime.Now }); } catch { }
+                    _ = LoadEnhancementLogsAsync();
 
-                    MessageBox.Show($"视频增强完成！\n已保存并入库。\n{outputPath}",
+                    EnhanceProgress = "";
+                    MessageBox.Show($"视频增强完成！\n使用方法：{methodName}\n已保存并入库。\n{outputPath}",
                         "增强成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 finally
                 {
                     IsEnhancing = false;
+                    EnhanceProgress = "";
                     _enhanceCts?.Dispose();
                     _enhanceCts = null;
                 }
@@ -382,8 +508,11 @@ partial class MainViewModel
             }
 
             // 图片增强 — 根据选中的增强方法调用对应算法
+            IsEnhancing = true;
+            _enhanceCts = new CancellationTokenSource();
             try
             {
+                EnhanceProgress = "正在加载图片...";
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(file.FilePath);
@@ -396,9 +525,23 @@ partial class MainViewModel
                 var methodName = offlineMethod?.Name ?? "线性拉伸";
                 BitmapSource enhanced;
                 if (offlineMethod is IOnnxEnhancement onnx)
+                {
+                    EnhanceProgress = $"正在用 {methodName} 增强...";
                     enhanced = await onnx.EnhanceAsync(bitmap);
+                }
                 else
+                {
+                    EnhanceProgress = "正在增强...";
                     enhanced = LinearStretch.Enhance(bitmap);
+                }
+
+                if (_enhanceCts.IsCancellationRequested)
+                {
+                    EnhanceProgress = "";
+                    return;
+                }
+
+                EnhanceProgress = "正在保存...";
 
                 var saveDir = EnhancementSavePath;
                 Directory.CreateDirectory(saveDir);
@@ -410,24 +553,13 @@ partial class MainViewModel
                 using var stream = new FileStream(filePath, FileMode.Create);
                 encoder.Save(stream);
 
-                var newFile = new MediaFile
-                {
-                    Title = Path.GetFileNameWithoutExtension(fileName),
-                    FilePath = filePath,
-                    Type = "图片",
-                    FileFormat = ".jpg",
-                    FileSize = new FileInfo(filePath).Length,
-                    Description = $"由「{file.Title}」增强生成",
-                        SourceFileId = file.Id,
-                    IsFavorite = false,
-                    DateAdded = DateTime.Now,
-                    DateModified = DateTime.Now
-                };
-                await _dataService.AddMediaFileAsync(newFile);
-                try { await GenerateThumbnailForFileAsync(newFile); } catch { }
+                // 复用标准导入流程（含缩略图生成）
+                await ImportFilePathsAsync(new[] { filePath },
+                    $"由「{file.Title}」增强生成", file.Id);
                 try { await _dataService.AddEnhancementLogAsync(new EnhancementLog { MediaFileId = file.Id, MethodName = methodName, OutputPath = filePath, ParametersJson = BuildEnhancementParamsJson(), CreatedAt = DateTime.Now }); } catch { }
-                await LoadDataAsync();
+                _ = LoadEnhancementLogsAsync();
 
+                EnhanceProgress = "";
                 MessageBox.Show($"增强完成！\n已保存并导入到影音库。\n{filePath}",
                     "增强成功", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -435,6 +567,13 @@ partial class MainViewModel
             {
                 System.Windows.MessageBox.Show($"增强失败：{ex.Message}",
                     "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsEnhancing = false;
+                EnhanceProgress = "";
+                _enhanceCts?.Dispose();
+                _enhanceCts = null;
             }
         }
 
@@ -464,26 +603,35 @@ partial class MainViewModel
                 using var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create);
                 encoder.Save(stream);
 
-                // 自动导入影音库
+                // 入库 + 缩略图
                 var info = new System.IO.FileInfo(filePath);
-                var newFile = new Models.MediaFile
+                var newFile = new MediaFile
                 {
                     Title = System.IO.Path.GetFileNameWithoutExtension(fileName),
-                    FilePath = filePath,
-                    Type = "图片",
-                    FileFormat = ".jpg",
-                    FileSize = info.Length,
-                    Description = "增强图片",
-                    IsFavorite = false,
-                    DateAdded = DateTime.Now,
-                    DateModified = info.LastWriteTime
+                    FilePath = filePath, Type = "图片", FileFormat = ".jpg",
+                    FileSize = info.Length, Description = "增强图片",
+                    IsFavorite = false, DateAdded = DateTime.Now, DateModified = info.LastWriteTime
                 };
                 await _dataService.AddMediaFileAsync(newFile);
-
-                // 生成缩略图
                 try { await GenerateThumbnailForFileAsync(newFile); } catch { }
 
+                // 记录增强日志（用正确的 MediaFileId）
+                var method = GetSelectedOfflineMethod();
+                try
+                {
+                    await _dataService.AddEnhancementLogAsync(new EnhancementLog
+                    {
+                        MediaFileId = newFile.Id,
+                        MethodName = method?.Name ?? "线性拉伸",
+                        OutputPath = filePath,
+                        ParametersJson = BuildEnhancementParamsJson(),
+                        CreatedAt = DateTime.Now
+                    });
+                }
+                catch { }
                 await LoadDataAsync();
+                await LoadStatisticsAsync();
+                _ = LoadEnhancementLogsAsync();
 
                 System.Windows.MessageBox.Show($"增强图片已保存并导入影音库：\n{filePath}",
                     "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -595,19 +743,13 @@ partial class MainViewModel
                 try
                 {
                     var info = new FileInfo(outputPath);
-                    var mediaFile = new MediaFile
-                    {
-                        Title = Path.GetFileNameWithoutExtension(outputPath),
-                        FilePath = outputPath, Type = "视频", FileFormat = ".mp4",
-                        FileSize = info.Length, Description = "屏幕录制",
-                        IsFavorite = false, DateAdded = DateTime.Now,
-                        DateModified = info.LastWriteTime
-                    };
-                    await _dataService.AddMediaFileAsync(mediaFile);
-                    try { await _dataService.AddRecordingAsync(mediaFile.Id, outputPath, durationSec, EnhancedRecording); } catch { }
+                    // 复用标准导入流程（含缩略图生成）
+                    await ImportFilePathsAsync(new[] { outputPath }, "屏幕录制");
+                    // 查找导入后的文件 ID，追加录屏专属记录
+                    var importedFile = await _dataService.GetMediaFileByPathAsync(outputPath);
+                    if (importedFile != null)
+                        try { await _dataService.AddRecordingAsync(importedFile.Id, outputPath, durationSec, EnhancedRecording); } catch { }
                     await LoadRecordingsAsync();
-                    await LoadDataAsync();
-                    await LoadStatisticsAsync();
                 }
                 catch (Exception ex) { Debug.WriteLine($"入库失败: {ex.Message}"); }
 

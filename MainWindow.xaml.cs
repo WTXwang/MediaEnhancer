@@ -98,7 +98,16 @@ namespace MediaEnhancer
         private void FileDropdown_Click(object sender, RoutedEventArgs e)
         {
             if (FilePopup.IsOpen) { FilePopup.IsOpen = false; return; }
+            if (DataContext is MainViewModel vm)
+                vm.RefreshSelectedAiFileCount();
             FilePopup.IsOpen = true;
+        }
+
+        /// <summary>文件下拉框中勾选/取消勾选时实时刷新计数。</summary>
+        private void FileCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                vm.RefreshSelectedAiFileCount();
         }
 
         /// <summary>

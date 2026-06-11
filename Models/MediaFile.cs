@@ -41,6 +41,18 @@ namespace MediaEnhancer.Models
         public long FileSize { get; set; }
 
         /// <summary>
+        /// 获取人类可读的文件大小（如 "1.5 MB"），不持久化到数据库。
+        /// </summary>
+        [NotMapped]
+        public string FileSizeDisplay => FileSize switch
+        {
+            < 1024 => $"{FileSize} B",
+            < 1024 * 1024 => $"{FileSize / 1024.0:F1} KB",
+            < 1024 * 1024 * 1024 => $"{FileSize / (1024.0 * 1024):F1} MB",
+            _ => $"{FileSize / (1024.0 * 1024 * 1024):F2} GB"
+        };
+
+        /// <summary>
         /// 获取或设置画面宽度（像素）。图片可直接读取，视频可为 null。
         /// </summary>
         public int? Width { get; set; }
@@ -104,5 +116,11 @@ namespace MediaEnhancer.Models
         /// 获取或设置文件的最后修改时间（来自文件系统的 LastWriteTime）。
         /// </summary>
         public DateTime DateModified { get; set; }
+
+        /// <summary>归属用户 ID（外键）。</summary>
+        public int UserId { get; set; }
+
+        /// <summary>导航属性：归属用户。</summary>
+        public User? User { get; set; }
     }
 }

@@ -96,14 +96,19 @@ namespace MediaEnhancer.Services
         Task<bool> FilePathExistsAsync(string filePath);
 
         /// <summary>
+        /// 根据文件路径获取媒体文件（用于导入后查找 ID 等场景）。
+        /// </summary>
+        Task<MediaFile?> GetMediaFileByPathAsync(string filePath);
+
+        /// <summary>
         /// 获取媒体文件总数。
         /// </summary>
         Task<int> GetTotalCountAsync();
 
         /// <summary>
-        /// 获取图片和视频各自的数量。
+        /// 获取图片、视频、音频各自的数量。
         /// </summary>
-        Task<(int imageCount, int videoCount)> GetTypeCountAsync();
+        Task<(int imageCount, int videoCount, int audioCount)> GetTypeCountAsync();
 
         /// <summary>
         /// 获取增强日志总数。
@@ -146,5 +151,30 @@ namespace MediaEnhancer.Services
         /// 获取录制历史列表。
         /// </summary>
         Task<List<Recording>> GetRecordingsAsync(int count = 30);
+
+        /// <summary>
+        /// 获取当前用户的增强日志列表（含源文件导航属性）。
+        /// </summary>
+        Task<List<EnhancementLog>> GetEnhancementLogsAsync(int count = 50);
+
+        /// <summary>
+        /// 获取当前用户的实时增强会话记录（按启动时间倒序）。
+        /// </summary>
+        Task<List<RealtimeSession>> GetRealtimeSessionsAsync(int count = 50);
+
+        /// <summary>
+        /// 新增实时增强会话记录。
+        /// </summary>
+        Task<RealtimeSession> AddRealtimeSessionAsync(RealtimeSession session);
+
+        /// <summary>
+        /// 更新实时增强会话记录（写入结束时间）。
+        /// </summary>
+        Task UpdateRealtimeSessionAsync(RealtimeSession session);
+
+        /// <summary>
+        /// 获取当前用户的实时增强会话次数。
+        /// </summary>
+        Task<int> GetRealtimeSessionCountAsync();
     }
 }

@@ -22,6 +22,7 @@ namespace MediaEnhancer.Services;
 public class AiService
 {
     private readonly HttpClient _httpClient;
+    private readonly IAuthService _authService;
 
     // 对话配置
     private string _chatKey = "";
@@ -40,10 +41,14 @@ public class AiService
     public string CurrentEditModel => _editModel;
     public bool LastCallFallback { get; private set; }
 
-    public AiService()
+    /// <summary>获取当前用户的配置实例。</summary>
+    private AppConfig Config => new(_authService.CurrentUser?.Id ?? 0);
+
+    public AiService(IAuthService authService)
     {
+        _authService = authService;
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-        var cfg = AppConfig.Load();
+        var cfg = Config.Load();
         _chatEndpoint = cfg.ChatEndpoint;
         _chatKey = cfg.ChatKey;
         _chatModel = cfg.ChatModel;
@@ -59,11 +64,11 @@ public class AiService
         if (!string.IsNullOrWhiteSpace(endpoint)) _chatEndpoint = endpoint.TrimEnd('/');
         if (!string.IsNullOrWhiteSpace(model)) _chatModel = model;
 
-        var cfg = AppConfig.Load();
+        var cfg = Config.Load();
         cfg.ChatEndpoint = _chatEndpoint;
         cfg.ChatKey = _chatKey;
         cfg.ChatModel = _chatModel;
-        AppConfig.Save(cfg);
+        Config.Save(cfg);
     }
 
     public void ConfigureEdit(string apiKey, string endpoint, string model, string format)
@@ -73,25 +78,25 @@ public class AiService
         if (!string.IsNullOrWhiteSpace(model)) _editModel = model;
         if (!string.IsNullOrWhiteSpace(format)) _editFormat = format;
 
-        var cfg = AppConfig.Load();
+        var cfg = Config.Load();
         cfg.EditEndpoint = _editEndpoint;
         cfg.EditKey = _editKey;
         cfg.EditModel = _editModel;
         cfg.EditFormat = _editFormat;
-        AppConfig.Save(cfg);
+        Config.Save(cfg);
     }
 
     /// <summary>获取已保存的对话配置（用于 UI 回填）。</summary>
     public (string endpoint, string model, bool hasKey) GetSavedChatConfig()
     {
-        var cfg = AppConfig.Load();
+        var cfg = Config.Load();
         return (cfg.ChatEndpoint, cfg.ChatModel, !string.IsNullOrEmpty(cfg.ChatKey));
     }
 
     /// <summary>获取已保存的编辑配置。</summary>
     public (string endpoint, string model, bool hasKey) GetSavedEditConfig()
     {
-        var cfg = AppConfig.Load();
+        var cfg = Config.Load();
         return (cfg.EditEndpoint, cfg.EditModel, !string.IsNullOrEmpty(cfg.EditKey));
     }
 

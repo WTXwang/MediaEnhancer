@@ -28,23 +28,18 @@ namespace MediaEnhancer.ViewModels
         private readonly IThumbnailService _thumbnailService;
         private readonly EnhancementRegistry _registry;
         private readonly AiService _aiService;
+        private readonly IAuthService _authService;
+
+        /// <summary>当前登录用户的显示名称。</summary>
+        public string CurrentUserDisplayName => _authService.CurrentUser?.DisplayName ?? "未登录";
 
         // ============================================================
         // 构造函数
         // ============================================================
 
-        /// <summary>
-        /// 构造函数，通过依赖注入获取数据服务、文件扫描服务和增强方法注册中心。
-        /// </summary>
-        /// <param name="dataService">数据服务接口。</param>
-        /// <param name="fileScanService">文件扫描服务接口。</param>
-        /// <param name="playbackService">播放服务接口。</param>
-        /// <param name="thumbnailService">缩略图服务接口。</param>
-        /// <param name="registry">增强方法注册中心。</param>
-        /// <param name="aiService">AI 服务。</param>
         public MainViewModel(IDataService dataService, IFileScanService fileScanService,
             IPlaybackService playbackService, IThumbnailService thumbnailService,
-            EnhancementRegistry registry, AiService aiService)
+            EnhancementRegistry registry, AiService aiService, IAuthService authService)
         {
             _dataService = dataService;
             _fileScanService = fileScanService;
@@ -52,9 +47,11 @@ namespace MediaEnhancer.ViewModels
             _thumbnailService = thumbnailService;
             _registry = registry;
             _aiService = aiService;
+            _authService = authService;
 
-            // 回填已保存的配置
-            var cfg = AppConfig.Load();
+            // 回填当前用户的已保存配置
+            var appConfig = new AppConfig(authService.CurrentUser?.Id ?? 0);
+            var cfg = appConfig.Load();
             _chatApiEndpoint = cfg.ChatEndpoint;
             _chatModelName = cfg.ChatModel;
             _editApiEndpoint = cfg.EditEndpoint;
@@ -119,6 +116,17 @@ namespace MediaEnhancer.ViewModels
         /// </summary>
         [ObservableProperty]
         private int _selectedPageIndex = 0;
+
+        /// <summary>
+        /// 页面切换时：进入离线增强页面则刷新增强记录。
+        /// </summary>
+        partial void OnSelectedPageIndexChanged(int value)
+        {
+            if (value == 2) // 离线增强页面
+                _ = LoadEnhancementLogsAsync();
+            if (value == 3) // 实时增强页面
+                _ = LoadRealtimeSessionsAsync();
+        }
 
         /// <summary>
         /// 切换页面的命令，由侧边栏导航按钮触发。
@@ -254,10 +262,94 @@ namespace MediaEnhancer.ViewModels
         /// <summary>
         /// 刷新文件列表命令（已实现）。
         /// </summary>
+        /// <summary>
+        /// 刷新文件列表，同时自动修复缺失信息：
+        /// 1. 源文件已删除的 → 移除记录
+        /// 2. 图片缺分辨率的 → 补充分辨率
+        /// 3. 缺缩略图的 → 生成缩略图
+        /// </summary>
         [RelayCommand]
         private async Task Refresh()
         {
-            await LoadDataAsync();
+            IsScanning = true;
+            ScanProgress = "正在刷新...";
+            int removed = 0, fixedDim = 0, fixedThumb = 0;
+
+            try
+            {
+                var allFiles = await _dataService.GetAllMediaFilesAsync();
+                int total = allFiles.Count;
+                int i = 0;
+
+                foreach (var file in allFiles)
+                {
+                    i++;
+                    ScanProgress = $"正在刷新... {i}/{total}";
+
+                    // 1. 源文件不存在 → 删除记录
+                    if (!File.Exists(file.FilePath))
+                    {
+                        try { await _dataService.DeleteMediaFileAsync(file.Id); removed++; }
+                        catch { }
+                        continue;
+                    }
+
+                    var needUpdate = false;
+
+                    // 2. 图片缺分辨率 → 补充
+                    if (file.Type == "图片" && (file.Width == null || file.Height == null))
+                    {
+                        var (w, h) = Core.MediaFileUtils.GetImageDimensions(file.FilePath);
+                        if (w != null)
+                        {
+                            file.Width = w;
+                            file.Height = h;
+                            needUpdate = true;
+                            fixedDim++;
+                        }
+                    }
+
+                    // 3. 缺缩略图 → 生成
+                    if (string.IsNullOrEmpty(file.ThumbnailPath))
+                    {
+                        var thumbPath = await _thumbnailService.GenerateThumbnailAsync(file);
+                        if (thumbPath != null)
+                        {
+                            file.ThumbnailPath = thumbPath;
+                            needUpdate = true;
+                            fixedThumb++;
+                        }
+                    }
+
+                    if (needUpdate)
+                    {
+                        try { await _dataService.UpdateMediaFileAsync(file); } catch { }
+                    }
+                }
+
+                await LoadDataAsync();
+                await LoadStatisticsAsync();
+
+                var msg = "刷新完成。";
+                if (removed > 0) msg += $"\n已移除 {removed} 条失效记录。";
+                if (fixedDim > 0) msg += $"\n已补充 {fixedDim} 个文件的分辨率。";
+                if (fixedThumb > 0) msg += $"\n已生成 {fixedThumb} 个缩略图。";
+                if (removed == 0 && fixedDim == 0 && fixedThumb == 0)
+                    msg += "\n所有文件状态正常。";
+
+                System.Windows.MessageBox.Show(msg, "刷新结果",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"刷新出错：{ex.Message}", "错误",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsScanning = false;
+                ScanProgress = "";
+            }
         }
 
         /// <summary>
@@ -301,7 +393,7 @@ namespace MediaEnhancer.ViewModels
                 // 刷新列表、统计和缩略图
                 await LoadDataAsync();
                 await LoadStatisticsAsync();
-                _ = GenerateThumbnailsAfterImportAsync();
+                await GenerateThumbnailsAfterImportAsync();
 
                 System.Windows.MessageBox.Show(
                     $"扫描完成！共导入 {newFiles.Count} 个新文件。",
@@ -328,28 +420,21 @@ namespace MediaEnhancer.ViewModels
         /// 导入单个或多个媒体文件到影音库。
         /// 弹出文件选择对话框，支持多选，自动提取元数据后入库。
         /// </summary>
-        [RelayCommand]
-        private async Task ImportFiles()
+        /// <summary>
+        /// 将文件路径列表导入影音库（提取元数据 → 入库 → 缩略图 → 刷新）。
+        /// ImportFiles 按钮和增强/导出/AI编辑流程均复用此方法。
+        /// </summary>
+        /// <returns>实际新增的文件数量。</returns>
+        private async Task<int> ImportFilePathsAsync(IEnumerable<string> paths,
+            string? description = null, int? sourceFileId = null)
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog();
-            dialog.Title = "选择要导入的媒体文件";
-            dialog.Multiselect = true;
-            dialog.Filter = "媒体文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp;*.mp4;*.avi;*.mkv;*.mov;*.wmv;*.flv;*.webm;*.mp3;*.wav;*.flac;*.aac;*.ogg;*.wma;*.m4a|所有文件|*.*";
-
-            if (dialog.ShowDialog() != true)
-                return;
-
             var mediaFiles = new List<Models.MediaFile>();
-            int skippedCount = 0;
 
-            foreach (var filePath in dialog.FileNames)
+            foreach (var filePath in paths)
             {
                 var extension = System.IO.Path.GetExtension(filePath);
                 if (!Core.MediaFileUtils.IsMediaFile(extension))
-                {
-                    skippedCount++;
                     continue;
-                }
 
                 var fileInfo = new System.IO.FileInfo(filePath);
                 var type = Core.MediaFileUtils.GetMediaType(extension);
@@ -371,32 +456,45 @@ namespace MediaEnhancer.ViewModels
                     Width = width,
                     Height = height,
                     Duration = duration,
-                    Description = type,
+                    Description = description ?? type,
+                    SourceFileId = sourceFileId,
                     IsFavorite = false,
                     DateAdded = DateTime.Now,
                     DateModified = fileInfo.LastWriteTime
                 });
             }
 
-            if (mediaFiles.Count == 0)
-            {
-                System.Windows.MessageBox.Show("未发现可导入的媒体文件。", "提示",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                return;
-            }
+            if (mediaFiles.Count == 0) return 0;
 
             var addedCount = await _dataService.AddMediaFilesAsync(mediaFiles);
-
             await LoadDataAsync();
             await LoadStatisticsAsync();
-            _ = GenerateThumbnailsAfterImportAsync();
+            await GenerateThumbnailsAfterImportAsync();
+            return addedCount;
+        }
 
+        [RelayCommand]
+        private async Task ImportFiles()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.Title = "选择要导入的媒体文件";
+            dialog.Multiselect = true;
+            dialog.Filter = "媒体文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp;*.mp4;*.avi;*.mkv;*.mov;*.wmv;*.flv;*.webm;*.mp3;*.wav;*.flac;*.aac;*.ogg;*.wma;*.m4a|所有文件|*.*";
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var totalFiles = dialog.FileNames.Length;
+
+            var addedCount = await ImportFilePathsAsync(dialog.FileNames);
+
+            var skippedCount = totalFiles - addedCount;
             var msg = addedCount > 0
                 ? $"导入完成！成功导入 {addedCount} 个文件。"
                 : "所选文件已在库中，无需重复导入。";
 
             if (skippedCount > 0)
-                msg += $"\n（{skippedCount} 个文件因格式不支持已跳过）";
+                msg += $"\n（{skippedCount} 个文件因格式不支持或重复已跳过）";
 
             System.Windows.MessageBox.Show(msg, "导入结果",
                 System.Windows.MessageBoxButton.OK,
@@ -633,6 +731,8 @@ namespace MediaEnhancer.ViewModels
         {
             if (file == null) return;
             await _dataService.UpdateMediaFileAsync(file);
+            System.Windows.MessageBox.Show("简介已保存。", "提示",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
 
         // ============================================================
@@ -857,96 +957,6 @@ namespace MediaEnhancer.ViewModels
             await LoadDataAsync();
             System.Windows.MessageBox.Show($"已为 {success}/{files.Count} 个文件生成缩略图。",
                 "批量缩略图完成", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        /// <summary>
-        /// 批量增强（待实现）。
-        /// </summary>
-        [RelayCommand]
-        private async Task BatchEnhance()
-        {
-            var allSelected = SelectedFiles.ToList();
-            var videoCount = allSelected.Count(f => f.Type == "视频");
-            var files = allSelected.Where(f => f.Type == "图片").ToList();
-
-            if (files.Count == 0)
-            {
-                var msg = "请选择至少一张图片文件。";
-                if (videoCount > 0) msg += $"\n\n已跳过 {videoCount} 个视频文件（视频增强不支持批量处理，请单独增强）。";
-                MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (videoCount > 0)
-            {
-                var result = MessageBox.Show(
-                    $"选中了 {videoCount} 个视频文件将被跳过（视频增强耗时较长，请单独处理）。\n\n是否继续批量增强 {files.Count} 张图片？",
-                    "批量增强", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result != MessageBoxResult.Yes) return;
-            }
-
-            var saveDir = EnhancementSavePath;
-            System.IO.Directory.CreateDirectory(saveDir);
-            int success = 0;
-
-            foreach (var file in files)
-            {
-                try
-                {
-                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = new Uri(file.FilePath);
-                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-
-                    BitmapSource enhanced;
-                    var offlineMethod = GetSelectedOfflineMethod();
-                    if (offlineMethod is IOnnxEnhancement onnx)
-                        enhanced = await onnx.EnhanceAsync(bitmap);
-                    else
-                        enhanced = LinearStretch.Enhance(bitmap);
-
-                    var fileName = $"enhanced_{file.Id}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
-                    var filePath = System.IO.Path.Combine(saveDir, fileName);
-
-                    var encoder = new System.Windows.Media.Imaging.JpegBitmapEncoder();
-                    encoder.QualityLevel = 92;
-                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(enhanced));
-                    using var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create);
-                    encoder.Save(stream);
-
-                    // 入库
-                    var info = new System.IO.FileInfo(filePath);
-                    var newFile = new Models.MediaFile
-                    {
-                        Title = System.IO.Path.GetFileNameWithoutExtension(fileName),
-                        FilePath = filePath,
-                        Type = "图片",
-                        FileFormat = ".jpg",
-                        FileSize = info.Length,
-                        Description = $"由「{file.Title}」增强生成",
-                        SourceFileId = file.Id,
-                        IsFavorite = false,
-                        DateAdded = DateTime.Now,
-                        DateModified = info.LastWriteTime
-                    };
-                    await _dataService.AddMediaFileAsync(newFile);
-
-                    // 缩略图
-                    try { await GenerateThumbnailForFileAsync(newFile); } catch { }
-
-                    success++;
-                }
-                catch { }
-            }
-
-            await LoadDataAsync();
-            await LoadStatisticsAsync();
-
-            System.Windows.MessageBox.Show(
-                $"批量增强完成！\n成功处理 {success}/{files.Count} 张图片。\n保存位置：{saveDir}",
-                "批量增强", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /// <summary>
