@@ -1,5 +1,6 @@
 ﻿using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using MediaEnhancer.Core;
@@ -30,12 +31,18 @@ namespace MediaEnhancer
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
-            // 注册增强方法
+            // 注册增强方法（ONNX 加载失败时静默跳过，不影响基础功能）
             var registry = ServiceProvider.GetRequiredService<EnhancementRegistry>();
-            registry.Register(new LinearStretchMethod());
-            registry.Register(new MultinexNanoMethod());
-            registry.RegisterOffline(new MultinexMethod());
-            registry.RegisterOffline(new ZeroDceMethod());
+            registry.Register(new LinearStretchMethod()); // 纯 C# 实现，始终可用
+
+            try { registry.Register(new MultinexNanoMethod()); }
+            catch (Exception ex) { Debug.WriteLine($"MultinexNano 加载失败: {ex.Message}"); }
+
+            try { registry.RegisterOffline(new MultinexMethod()); }
+            catch (Exception ex) { Debug.WriteLine($"Multinex 加载失败: {ex.Message}"); }
+
+            try { registry.RegisterOffline(new ZeroDceMethod()); }
+            catch (Exception ex) { Debug.WriteLine($"ZeroDce 加载失败: {ex.Message}"); }
 
             // ─── 确保数据库已迁移 ───
             using (var scope = ServiceProvider.CreateScope())
