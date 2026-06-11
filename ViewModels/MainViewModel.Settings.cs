@@ -74,6 +74,27 @@ partial class MainViewModel
             appConfig.Save(cfg);
         }
 
+        [RelayCommand]
+        private void BrowseRecordingPath()
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "选择录屏文件保存目录" };
+            if (dlg.ShowDialog() == true) RecordingSavePath = dlg.FolderName;
+        }
+
+        [RelayCommand]
+        private void BrowseEnhancementPath()
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "选择增强结果保存目录" };
+            if (dlg.ShowDialog() == true) EnhancementSavePath = dlg.FolderName;
+        }
+
+        [RelayCommand]
+        private void BrowseThumbnailPath()
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "选择缩略图缓存目录" };
+            if (dlg.ShowDialog() == true) ThumbnailSavePath = dlg.FolderName;
+        }
+
         // ============================================================
         /// 应用版本号。
         /// </summary>

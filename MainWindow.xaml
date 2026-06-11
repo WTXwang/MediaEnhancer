@@ -1791,22 +1791,49 @@
                                         <TextBlock Text="保存路径" Style="{StaticResource SectionTitleStyle}"/>
 
                                         <TextBlock Text="录屏文件保存目录" Style="{StaticResource FormLabelStyle}"/>
-                                        <TextBox Text="{Binding RecordingSavePath, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource TextBoxStyle}"
-                                                 ToolTip="录屏生成的 MP4 文件存放位置"
-                                                 Margin="0,0,0,10"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0" Text="{Binding RecordingSavePath, Mode=OneWay}"
+                                                     Style="{StaticResource TextBoxStyle}" IsReadOnly="True"
+                                                     ToolTip="录屏生成的 MP4 文件存放位置"/>
+                                            <Button Grid.Column="1" Content="📂" Width="36" Height="36"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Command="{Binding BrowseRecordingPathCommand}"
+                                                    Margin="6,0,0,0" Padding="6,4" FontSize="14"/>
+                                        </Grid>
 
                                         <TextBlock Text="增强结果保存目录" Style="{StaticResource FormLabelStyle}"/>
-                                        <TextBox Text="{Binding EnhancementSavePath, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource TextBoxStyle}"
-                                                 ToolTip="增强处理后的文件存放位置"
-                                                 Margin="0,0,0,10"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0" Text="{Binding EnhancementSavePath, Mode=OneWay}"
+                                                     Style="{StaticResource TextBoxStyle}" IsReadOnly="True"
+                                                     ToolTip="增强处理后的文件存放位置"/>
+                                            <Button Grid.Column="1" Content="📂" Width="36" Height="36"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Command="{Binding BrowseEnhancementPathCommand}"
+                                                    Margin="6,0,0,0" Padding="6,4" FontSize="14"/>
+                                        </Grid>
 
                                         <TextBlock Text="缩略图缓存目录" Style="{StaticResource FormLabelStyle}"/>
-                                        <TextBox Text="{Binding ThumbnailSavePath, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource TextBoxStyle}"
-                                                 ToolTip="缩略图缓存文件存放位置"
-                                                 Margin="0,0,0,4"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0" Text="{Binding ThumbnailSavePath, Mode=OneWay}"
+                                                     Style="{StaticResource TextBoxStyle}" IsReadOnly="True"
+                                                     ToolTip="缩略图缓存文件存放位置"/>
+                                            <Button Grid.Column="1" Content="📂" Width="36" Height="36"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Command="{Binding BrowseThumbnailPathCommand}"
+                                                    Margin="6,0,0,0" Padding="6,4" FontSize="14"/>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1886,12 +1913,6 @@
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Multinex Nano 低光增强">
                                                                 <Setter Property="Text" Value="Multinex Nano：超轻量 Retinex 网络（15K 参数），LOL-v2 合成数据训练。速度最快，适合批量处理和视频增强。"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Multinex 低光增强">
-                                                                <Setter Property="Text" Value="Multinex：完整 Retinex 网络（44K 参数），LOL-v1 数据训练。画质最佳，适合单张图片精细增强。"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding SelectedOfflineMethodName}" Value="Zero-DCE++ 低光增强">
-                                                                <Setter Property="Text" Value="Zero-DCE++：轻量级深度曲线估计网络（80K 参数），7 层深度可分离卷积。通过像素级曲线迭代增强暗光图像。"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>

@@ -562,6 +562,7 @@ namespace MediaEnhancer.ViewModels
             await _dataService.UpdateMediaFileAsync(file);
             await _dataService.SyncFavoriteRecordAsync(file.Id, file.IsFavorite);
             await LoadDataAsync();
+            await LoadStatisticsAsync();
             // 重新选中同 ID 的文件（保持详情面板不消失）
             SelectedFile = MediaFilesList.FirstOrDefault(f => f.Id == file.Id);
         }
@@ -717,6 +718,7 @@ namespace MediaEnhancer.ViewModels
             if (file == null) return;
             _playbackService.Play(file, System.Windows.Application.Current.MainWindow);
             await LoadRecentPlaysAsync();
+            await LoadStatisticsAsync();
         }
 
         // ============================================================
