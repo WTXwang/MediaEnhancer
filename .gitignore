@@ -24,6 +24,7 @@ installer/
 
 # 用户配置文件（含 API Key，绝对不提交）
 appsettings*.json
+setup.iss
 
 # 运行时生成的媒体目录
 Thumbnails/
