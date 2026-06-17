@@ -121,11 +121,13 @@ partial class MainViewModel
         {
             if (string.IsNullOrWhiteSpace(AiInputText)) return;
 
+            var files = GetSelectedAiFiles();
             var userMsg = new ChatMessage { Role = "user", Content = AiInputText };
+            if (files.Count > 0)
+                userMsg.AttachmentPaths = files.Select(f => f.ThumbnailPath ?? f.FilePath).ToList();
             AiMessages.Add(userMsg);
             AiInputText = "";
 
-            var files = GetSelectedAiFiles();
             var thinking = new ChatMessage { Role = "thinking", Content = "正在处理，请稍候..." };
             AiMessages.Add(thinking);
 
@@ -138,15 +140,16 @@ partial class MainViewModel
         private async Task ApplyAiPreset(string preset)
         {
             var files = GetSelectedAiFiles();
+            var paths = files.Count > 0 ? files.Select(f => f.ThumbnailPath ?? f.FilePath).ToList() : null;
 
             switch (preset)
             {
                 case "简介":
-                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📝 请为选中的文件生成简介和标签。" });
+                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📝 请为选中的文件生成简介和标签。", AttachmentPaths = paths });
                     break;
 
                 case "数据":
-                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📊 请生成选中文件的统计摘要。" });
+                    AiMessages.Add(new ChatMessage { Role = "user", Content = "📊 请生成选中文件的统计摘要。", AttachmentPaths = paths });
                     break;
 
                 default: return;

@@ -1407,6 +1407,21 @@
                                                             BorderThickness="1" CornerRadius="12" Padding="16,12">
                                                         <StackPanel>
                                                             <ContentControl Content="{Binding Content, Converter={StaticResource MarkdownTextConverter}}"/>
+                                                            <!-- 附件缩略图 -->
+                                                            <ItemsControl ItemsSource="{Binding AttachmentPaths}" Margin="0,8,0,0">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <WrapPanel/>
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Image Source="{Binding Converter={StaticResource ThumbnailConverter}}"
+                                                                               Width="64" Height="64" Stretch="UniformToFill"
+                                                                               Margin="0,0,4,4" RenderOptions.BitmapScalingMode="LowQuality"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
                                                             <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right">
                                                                 <Hyperlink Click="CopyMessage_Click" Tag="{Binding Content}"
                                                                            Foreground="#94A3B8" FontSize="11" TextDecorations="None">📋 复制</Hyperlink>
