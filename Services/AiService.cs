@@ -9,12 +9,11 @@ using MediaEnhancer.Models;
 namespace MediaEnhancer.Services;
 
 /// <summary>
-/// AI 服务：OpenAI 兼容大模型 + Whisper 语音转文字 + 模板化降级。
+/// AI 服务：OpenAI 兼容大模型 + 模板化降级。
 ///
 /// 用法：
 ///   ai.Configure(endpoint, key, model);
 ///   var reply = await ai.ChatAsync(messages, fileContext);
-///   var text = await ai.SpeechToTextAsync(audioPath);
 ///
 /// 降级逻辑：
 ///   API 未配置 或 调用失败 → 自动走模板化兜底，对话区会显示降级提示。
@@ -144,7 +143,7 @@ public class AiService
     }
 
     // ================================================================
-    // 图像生成（通义万相）
+    // 图像生成（统一同步调用，不区分 dashscope / openai）
     // ================================================================
 
     public async Task<(byte[]? data, string? error)> GenerateImageAsync(string prompt, string? imageBase64 = null)
@@ -155,10 +154,9 @@ public class AiService
         {
             var fmt = ResolveFormat();
 
-            if (fmt == "dashscope")
-                return await GenerateDashScopeAsync(prompt, imageBase64);
-            else
-                return await GenerateOpenAiStyleAsync(prompt, imageBase64);
+            return fmt == "dashscope"
+                ? await GenerateDashScopeAsync(prompt, imageBase64)
+                : await GenerateOpenAiStyleAsync(prompt, imageBase64);
         }
         catch (Exception ex)
         {
@@ -169,67 +167,40 @@ public class AiService
     private string ResolveFormat()
     {
         if (_editFormat == "dashscope" || _editFormat == "openai") return _editFormat;
-        // auto: 根据 URL 推断
         if (_editEndpoint.Contains("dashscope")) return "dashscope";
         return "openai";
     }
 
-    /// <summary>DashScope 通义万相（异步 + 轮询）。</summary>
+    /// <summary>DashScope 通义万相 / OpenAI 兼容 — 统一同步 POST，直接获取结果。</summary>
     private async Task<(byte[]? data, string? error)> GenerateDashScopeAsync(string prompt, string? imageBase64)
     {
-        var input = new Dictionary<string, object> { ["prompt"] = prompt };
-        if (!string.IsNullOrEmpty(imageBase64)) input["ref_img"] = $"data:image/png;base64,{imageBase64}";
-        var model = string.IsNullOrEmpty(imageBase64) ? _editModel : "wanx2.0-i2i-turbo";
-
-        var body = new { model, input, parameters = new { size = "1024*1024", n = 1 } };
-        var json = JsonSerializer.Serialize(body);
-
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_editKey}");
-        _httpClient.DefaultRequestHeaders.Add("X-DashScope-Async", "enable");
-
-        var resp = await _httpClient.PostAsync(_editEndpoint, content);
-        if (!resp.IsSuccessStatusCode)
-            return (null, $"API 返回 {resp.StatusCode}: {Truncate(await resp.Content.ReadAsStringAsync(), 300)}");
-
-        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        var taskId = doc.RootElement.GetProperty("output").GetProperty("task_id").GetString();
-        if (taskId == null) return (null, "未获取到 task_id");
-
-        var taskBase = new Uri(new Uri(_editEndpoint), "/api/v1/tasks").ToString();
-        for (int i = 0; i < 30; i++)
-        {
-            await Task.Delay(2000);
-            var checkResp = await _httpClient.GetAsync($"{taskBase}/{taskId}");
-            if (!checkResp.IsSuccessStatusCode) continue;
-
-            using var checkDoc = JsonDocument.Parse(await checkResp.Content.ReadAsStringAsync());
-            var st = checkDoc.RootElement.GetProperty("output").GetProperty("task_status").GetString();
-            if (st == "SUCCEEDED")
-            {
-                var url = checkDoc.RootElement.GetProperty("output").GetProperty("results")[0].GetProperty("url").GetString();
-                return url != null ? (await _httpClient.GetByteArrayAsync(url), null) : ((byte[]?)null, "URL 为空");
-            }
-            if (st == "FAILED")
-            {
-                var msg = checkDoc.RootElement.GetProperty("output").TryGetProperty("message", out var m) ? m.GetString() : "";
-                return (null, $"任务失败: {msg}");
-            }
-        }
-        return (null, "任务超时");
+        return await PostImageAsync(prompt, imageBase64, isDashScope: true);
     }
 
-    /// <summary>SiliconFlow / OpenAI 兼容（同步返回）。</summary>
-    private async Task<(byte[]? data, string? error)> GenerateOpenAiStyleAsync(string prompt, string? imageBase64 = null)
+    private async Task<(byte[]? data, string? error)> GenerateOpenAiStyleAsync(string prompt, string? imageBase64)
+    {
+        return await PostImageAsync(prompt, imageBase64, isDashScope: false);
+    }
+
+    private async Task<(byte[]? data, string? error)> PostImageAsync(string prompt, string? imageBase64, bool isDashScope)
     {
         object body;
-        if (!string.IsNullOrEmpty(imageBase64))
-            body = new { model = _editModel, prompt, image = $"data:image/png;base64,{imageBase64}", n = 1, size = "1024x1024" };
+        if (isDashScope)
+        {
+            var input = new Dictionary<string, object> { ["prompt"] = prompt };
+            if (!string.IsNullOrEmpty(imageBase64)) input["ref_img"] = $"data:image/png;base64,{imageBase64}";
+            var model = string.IsNullOrEmpty(imageBase64) ? _editModel : "wanx2.0-i2i-turbo";
+            body = new { model, input, parameters = new { size = "1024*1024", n = 1 } };
+        }
         else
-            body = new { model = _editModel, prompt, n = 1, size = "1024x1024" };
-        var json = JsonSerializer.Serialize(body);
+        {
+            if (!string.IsNullOrEmpty(imageBase64))
+                body = new { model = _editModel, prompt, image = $"data:image/png;base64,{imageBase64}", n = 1, size = "1024x1024" };
+            else
+                body = new { model = _editModel, prompt, n = 1, size = "1024x1024" };
+        }
 
+        var json = JsonSerializer.Serialize(body);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_editKey}");
@@ -238,50 +209,33 @@ public class AiService
         if (!resp.IsSuccessStatusCode)
         {
             var errBody = await resp.Content.ReadAsStringAsync();
-            return (null, $"API {resp.StatusCode}: {Truncate(errBody, 300)}\n发送: {Truncate(json, 200)}");
+            return (null, $"API {resp.StatusCode}: {Truncate(errBody, 300)}");
         }
 
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        var url = doc.RootElement.GetProperty("data")[0].GetProperty("url").GetString();
+
+        string? url = null;
+        if (isDashScope)
+        {
+            // DashScope 同步响应：output.results[0].url
+            if (doc.RootElement.TryGetProperty("output", out var output) &&
+                output.TryGetProperty("results", out var results) &&
+                results.GetArrayLength() > 0)
+                url = results[0].GetProperty("url").GetString();
+        }
+        else
+        {
+            // OpenAI 兼容：data[0].url
+            if (doc.RootElement.TryGetProperty("data", out var data) &&
+                data.GetArrayLength() > 0)
+                url = data[0].GetProperty("url").GetString();
+        }
+
         return url != null ? (await _httpClient.GetByteArrayAsync(url), null) : ((byte[]?)null, "URL 为空");
     }
 
     private static string Truncate(string s, int len) =>
         s.Length <= len ? s : s[..len] + "...";
-
-    // ================================================================
-    // 语音转文字
-    // ================================================================
-
-    public async Task<string> SpeechToTextAsync(string audioPath)
-    {
-        if (!IsChatConfigured || !File.Exists(audioPath))
-            return "⚠ 语音转文字需要 API 连接，且文件必须存在。";
-
-        try
-        {
-            using var form = new MultipartFormDataContent();
-            form.Add(new ByteArrayContent(await File.ReadAllBytesAsync(audioPath)), "file", Path.GetFileName(audioPath));
-            form.Add(new StringContent("whisper-1"), "model");
-
-            _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_chatKey}");
-
-            var resp = await _httpClient.PostAsync($"{_chatEndpoint}/audio/transcriptions", form);
-            resp.EnsureSuccessStatusCode();
-
-            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-            var text = doc.RootElement.GetProperty("text").GetString() ?? "";
-            LastCallFallback = false;
-            return text;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Whisper 调用失败: {ex.Message}");
-            LastCallFallback = true;
-            return "⚠ 语音转文字失败（网络错误或 API 不支持），请稍后重试。";
-        }
-    }
 
     // ================================================================
     // 构建多模态消息
@@ -544,7 +498,7 @@ public class AiService
     private string TemplateGeneral(List<MediaFile>? files)
     {
         if (files == null || files.Count == 0)
-            return "我是影音智增强系统的 AI 助手。\n\n我可以帮你：\n• 📝 分析影音文件并生成简介\n• ✨ 给出增强参数建议\n• 🎨 推荐美化方案\n• 🎤 语音转文字\n• 📊 生成数据摘要\n\n请从左侧选择文件，然后点击快捷提示或输入问题。\n\n*💡 配置 API 后可开启真实大模型对话。*";
+            return "我是影音智增强系统的 AI 助手。\n\n我可以帮你：\n• 📝 分析影音文件并生成简介\n• ✨ 给出增强参数建议\n• 🎨 推荐美化方案\n• 📊 生成数据摘要\n\n请从左侧选择文件，然后点击快捷提示或输入问题。\n\n*💡 配置 API 后可开启真实大模型对话。*";
         return TemplateDescription(files);
     }
 
