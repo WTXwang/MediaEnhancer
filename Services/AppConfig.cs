@@ -78,11 +78,11 @@ public class AppSettings
 {
     public string ChatEndpoint { get; set; } = "https://dashscope.aliyuncs.com/compatible-mode/v1";
     public string ChatKey { get; set; } = "";
-    public string ChatModel { get; set; } = "qwen-plus";
+    public string ChatModel { get; set; } = "qwen3-vl-flash";
 
-    public string EditEndpoint { get; set; } = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
+    public string EditEndpoint { get; set; } = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
     public string EditKey { get; set; } = "";
-    public string EditModel { get; set; } = "wanx2.0-t2i-turbo";
+    public string EditModel { get; set; } = "wan2.7-image";
     public string EditFormat { get; set; } = "auto";
 
     public string RecordingPath { get; set; } = "";

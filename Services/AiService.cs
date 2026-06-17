@@ -26,12 +26,12 @@ public class AiService
     // 对话配置
     private string _chatKey = "";
     private string _chatEndpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-    private string _chatModel = "qwen-plus";
+    private string _chatModel = "qwen3-vl-flash";
 
     // 编辑（生图）配置
     private string _editKey = "";
-    private string _editEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
-    private string _editModel = "wanx2.0-t2i-turbo";
+    private string _editEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+    private string _editModel = "wan2.7-image";
     private string _editFormat = "auto";
 
     public bool IsChatConfigured => !string.IsNullOrEmpty(_chatKey);
@@ -73,7 +73,11 @@ public class AiService
     public void ConfigureEdit(string apiKey, string endpoint, string model, string format)
     {
         if (!string.IsNullOrWhiteSpace(apiKey)) _editKey = apiKey;
-        if (!string.IsNullOrWhiteSpace(endpoint)) _editEndpoint = endpoint.TrimEnd('/');
+        if (!string.IsNullOrWhiteSpace(endpoint))
+        {
+            endpoint = endpoint.TrimEnd('/');
+            _editEndpoint = AutoCompleteEndpoint(endpoint);
+        }
         if (!string.IsNullOrWhiteSpace(model)) _editModel = model;
         if (!string.IsNullOrWhiteSpace(format)) _editFormat = format;
 
@@ -83,6 +87,24 @@ public class AiService
         cfg.EditModel = _editModel;
         cfg.EditFormat = _editFormat;
         Config.Save(cfg);
+    }
+
+    /// <summary>
+    /// 自动补全生图端点。DashScope → multimodal-generation，OpenAI 兼容 → /images/generations。
+    /// </summary>
+    private static string AutoCompleteEndpoint(string endpoint)
+    {
+        if (endpoint.Contains("dashscope"))
+        {
+            if (!endpoint.Contains("multimodal-generation"))
+                return "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+            return endpoint;
+        }
+
+        // OpenAI 兼容：仅输入 base URL 时自动拼后缀
+        if (!endpoint.Contains("images/generations") && !endpoint.Contains("image"))
+            return endpoint + "/images/generations";
+        return endpoint;
     }
 
     /// <summary>获取已保存的对话配置（用于 UI 回填）。</summary>
@@ -184,23 +206,31 @@ public class AiService
 
     private async Task<(byte[]? data, string? error)> PostImageAsync(string prompt, string? imageBase64, bool isDashScope)
     {
-        object body;
+        string json;
         if (isDashScope)
         {
-            var input = new Dictionary<string, object> { ["prompt"] = prompt };
-            if (!string.IsNullOrEmpty(imageBase64)) input["ref_img"] = $"data:image/png;base64,{imageBase64}";
-            var model = string.IsNullOrEmpty(imageBase64) ? _editModel : "wanx2.0-i2i-turbo";
-            body = new { model, input, parameters = new { size = "1024*1024", n = 1 } };
+            var msgs = new List<object>();
+            var parts = new List<object> { new { text = prompt } };
+            if (!string.IsNullOrEmpty(imageBase64))
+                parts.Add(new { image = $"data:image/png;base64,{imageBase64}" });
+            msgs.Add(new { role = "user", content = parts });
+            json = JsonSerializer.Serialize(new
+            {
+                model = _editModel,
+                input = new { messages = msgs },
+                parameters = new { size = "2048*2048" }
+            });
         }
         else
         {
+            object body;
             if (!string.IsNullOrEmpty(imageBase64))
                 body = new { model = _editModel, prompt, image = $"data:image/png;base64,{imageBase64}", n = 1, size = "1024x1024" };
             else
                 body = new { model = _editModel, prompt, n = 1, size = "1024x1024" };
+            json = JsonSerializer.Serialize(body);
         }
 
-        var json = JsonSerializer.Serialize(body);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_editKey}");
@@ -217,17 +247,17 @@ public class AiService
         string? url = null;
         if (isDashScope)
         {
-            // DashScope 同步响应：output.results[0].url
-            if (doc.RootElement.TryGetProperty("output", out var output) &&
-                output.TryGetProperty("results", out var results) &&
-                results.GetArrayLength() > 0)
-                url = results[0].GetProperty("url").GetString();
+            var output = doc.RootElement.GetProperty("output");
+            var choices = output.GetProperty("choices");
+            var msgContent = choices[0].GetProperty("message").GetProperty("content");
+            if (msgContent.ValueKind == JsonValueKind.Array && msgContent.GetArrayLength() > 0)
+                url = msgContent[0].GetProperty("image").GetString();
+            else
+                url = msgContent.GetString();
         }
         else
         {
-            // OpenAI 兼容：data[0].url
-            if (doc.RootElement.TryGetProperty("data", out var data) &&
-                data.GetArrayLength() > 0)
+            if (doc.RootElement.TryGetProperty("data", out var data) && data.GetArrayLength() > 0)
                 url = data[0].GetProperty("url").GetString();
         }
 

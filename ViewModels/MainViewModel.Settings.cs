@@ -161,10 +161,10 @@ partial class MainViewModel
 
             ChatApiEndpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1";
             ChatApiKey = "";
-            ChatModelName = "qwen-plus";
-            EditApiEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
+            ChatModelName = "qwen3-vl-flash";
+            EditApiEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
             EditApiKey = "";
-            EditModelName = "wanx2.0-t2i-turbo";
+            EditModelName = "wan2.7-image";
             EditFormat = "auto";
             RecordingSavePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recordings");
             EnhancementSavePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Enhancements");

@@ -50,7 +50,7 @@ partial class MainViewModel
         private string _chatApiKey = "";
 
         [ObservableProperty]
-        private string _chatModelName = "qwen-plus";
+        private string _chatModelName = "qwen3-vl-flash";
 
         [ObservableProperty]
         private bool _chatConfigured = false;
@@ -72,13 +72,13 @@ partial class MainViewModel
         // ---- AI 编辑配置 ----
 
         [ObservableProperty]
-        private string _editApiEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation";
+        private string _editApiEndpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
         [ObservableProperty]
         private string _editApiKey = "";
 
         [ObservableProperty]
-        private string _editModelName = "wanx2.0-t2i-turbo";
+        private string _editModelName = "wan2.7-image";
 
         [ObservableProperty]
         private string _editFormat = "auto";
