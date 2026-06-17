@@ -24,7 +24,7 @@ partial class MainViewModel
             new ChatMessage
             {
                 Role = "assistant",
-                Content = "你好！我是影音智增强管理系统的 AI 助手。\n\n你可以：\n• 从左侧勾选文件\n• 点击快捷提示按钮\n• 或直接输入问题\n\n未配置 API 时将使用本地模板分析。"
+                Content = "你好！我是影音智增强系统的 AI 助手。\n\n你可以：\n• 从左侧勾选文件\n• 点击快捷提示按钮\n• 或直接输入问题\n\n未配置 API 时将使用本地模板分析。"
             }
         };
 

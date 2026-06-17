@@ -56,19 +56,38 @@ public partial class LoginWindow : Window
     private void TabBar_Click(object sender, MouseButtonEventArgs e)
     {
         var pos = e.GetPosition((IInputElement)sender);
-        // 判断点击在左半（登录）还是右半（注册）
         bool clickRight = pos.X > ((FrameworkElement)sender).ActualWidth / 2;
 
         if (clickRight && !_vm.RegisterMode)
-            _vm.SwitchModeCommand.Execute(null);
+            SwitchToRegister();
         else if (!clickRight && _vm.RegisterMode)
-            _vm.SwitchModeCommand.Execute(null);
+            SwitchToLogin();
     }
 
     /// <summary>底部链接点击——切换模式。</summary>
     private void SwitchMode_Click(object sender, MouseButtonEventArgs e)
     {
+        if (_vm.RegisterMode) SwitchToLogin(); else SwitchToRegister();
+    }
+
+    private void SwitchToLogin()
+    {
+        ClearFields();
         _vm.SwitchModeCommand.Execute(null);
+    }
+
+    private void SwitchToRegister()
+    {
+        ClearFields();
+        _vm.SwitchModeCommand.Execute(null);
+    }
+
+    private void ClearFields()
+    {
+        _vm.Username = "";
+        _vm.DisplayName = "";
+        _vm.ErrorMessage = "";
+        PwdBox.Password = "";
     }
 
     /// <summary>拖拽窗口。</summary>

@@ -9,6 +9,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MediaEnhancer.Models;
+using Microsoft.Extensions.DependencyInjection;
+using MediaEnhancer.Services;
 using MediaEnhancer.ViewModels;
 using MediaEnhancer.Views;
 
@@ -48,6 +50,17 @@ namespace MediaEnhancer
                 Width = Math.Min(workArea.Width * 0.65, 1600);
                 Height = Math.Min(workArea.Height * 0.65, 900);
             }
+
+            // 回填已保存的 API 密钥到 PasswordBox（非关键操作，异常不影响主流程）
+            try
+            {
+                var authService = App.ServiceProvider.GetRequiredService<IAuthService>();
+                var cfg = new AppConfig(authService.CurrentUser?.Id ?? 0);
+                var settings = cfg.Load();
+                if (ChatApiKeyBox != null) ChatApiKeyBox.Password = settings.ChatKey;
+                if (EditApiKeyBox != null) EditApiKeyBox.Password = settings.EditKey;
+            }
+            catch { }
         }
 
         /// <summary>
@@ -128,6 +141,52 @@ namespace MediaEnhancer
             {
                 vm.SendAiMessageCommand.Execute(null);
                 e.Handled = true;
+            }
+        }
+
+        private void ChatApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+                vm.ChatApiKey = ChatApiKeyBox.Password;
+        }
+
+        private void EditApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm)
+                vm.EditApiKey = EditApiKeyBox.Password;
+        }
+
+        private void ToggleChatApiKeyVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            bool showing = ChatApiKeyTextBox.Visibility == Visibility.Visible;
+            if (showing)
+            {
+                ChatApiKeyBox.Password = ChatApiKeyTextBox.Text;
+                ChatApiKeyBox.Visibility = Visibility.Visible;
+                ChatApiKeyTextBox.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ChatApiKeyTextBox.Text = ChatApiKeyBox.Password;
+                ChatApiKeyBox.Visibility = Visibility.Collapsed;
+                ChatApiKeyTextBox.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void ToggleEditApiKeyVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            bool showing = EditApiKeyTextBox.Visibility == Visibility.Visible;
+            if (showing)
+            {
+                EditApiKeyBox.Password = EditApiKeyTextBox.Text;
+                EditApiKeyBox.Visibility = Visibility.Visible;
+                EditApiKeyTextBox.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                EditApiKeyTextBox.Text = EditApiKeyBox.Password;
+                EditApiKeyBox.Visibility = Visibility.Collapsed;
+                EditApiKeyTextBox.Visibility = Visibility.Visible;
             }
         }
 

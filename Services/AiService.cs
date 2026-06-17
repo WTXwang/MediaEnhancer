@@ -544,7 +544,7 @@ public class AiService
     private string TemplateGeneral(List<MediaFile>? files)
     {
         if (files == null || files.Count == 0)
-            return "我是影音智增强管理系统的 AI 助手。\n\n我可以帮你：\n• 📝 分析影音文件并生成简介\n• ✨ 给出增强参数建议\n• 🎨 推荐美化方案\n• 🎤 语音转文字\n• 📊 生成数据摘要\n\n请从左侧选择文件，然后点击快捷提示或输入问题。\n\n*💡 配置 API 后可开启真实大模型对话。*";
+            return "我是影音智增强系统的 AI 助手。\n\n我可以帮你：\n• 📝 分析影音文件并生成简介\n• ✨ 给出增强参数建议\n• 🎨 推荐美化方案\n• 🎤 语音转文字\n• 📊 生成数据摘要\n\n请从左侧选择文件，然后点击快捷提示或输入问题。\n\n*💡 配置 API 后可开启真实大模型对话。*";
         return TemplateDescription(files);
     }
 
@@ -553,7 +553,7 @@ public class AiService
     // ================================================================
 
     public static string DefaultSystemPrompt() =>
-        "你是影音智增强管理系统的 AI 助手。你可以帮助用户分析影音文件、给出增强建议、美化方案、生成内容简介和标签。回答简洁、专业、有帮助。";
+        "你是影音智增强系统的 AI 助手。你可以帮助用户分析影音文件、给出增强建议、美化方案、生成内容简介和标签。回答简洁、专业、有帮助。";
 
     public static string DescriptionPrompt() =>
         "你是一个影音内容分析助手。根据用户提供的文件信息和图片/视频帧，为每个文件生成简洁的内容简介（20-50字）和3-5个标签。按文件逐一回复，格式清晰。";

@@ -57,7 +57,7 @@ namespace MediaEnhancer
 
             // 登录/注册成功提示
             System.Windows.MessageBox.Show(
-                $"欢迎使用影音智增强管理系统，{authService.CurrentUser.DisplayName}！",
+                $"欢迎使用影音智增强系统，{authService.CurrentUser.DisplayName}！",
                 "登录成功",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);

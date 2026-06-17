@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:core="clr-namespace:MediaEnhancer.Core"
         mc:Ignorable="d"
-        Title="影音智增强管理系统" Height="750" Width="1200"
+        Title="影音智增强系统" Height="750" Width="1200"
         MinHeight="600" MinWidth="960"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
@@ -1728,8 +1728,30 @@
                                                   Text="{Binding ChatApiEndpoint, UpdateSourceTrigger=PropertyChanged}"
                                                   IsEditable="True" Style="{StaticResource ComboBoxStyle}" Margin="0,0,0,10"/>
                                         <TextBlock Text="API 密钥" Style="{StaticResource FormLabelStyle}"/>
-                                        <TextBox Text="{Binding ChatApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource TextBoxStyle}" Margin="0,0,0,10"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <PasswordBox x:Name="ChatApiKeyBox"
+                                                         PasswordChanged="ChatApiKeyBox_PasswordChanged"
+                                                         PasswordChar="●"
+                                                         Padding="10,6" FontSize="13"
+                                                         Background="White"
+                                                         BorderBrush="#CBD5E1"
+                                                         BorderThickness="2"/>
+                                            <TextBox x:Name="ChatApiKeyTextBox"
+                                                     Text="{Binding ChatApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                     Padding="10,6" FontSize="13"
+                                                     Background="White"
+                                                     BorderBrush="#CBD5E1"
+                                                     BorderThickness="2"
+                                                     Visibility="Collapsed"/>
+                                            <Button Grid.Column="1" Content="👁" Width="36" Height="36"
+                                                    Margin="4,0,0,0" Padding="4" FontSize="14"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Click="ToggleChatApiKeyVisibility_Click"/>
+                                        </Grid>
                                         <TextBlock Text="模型名称" Style="{StaticResource FormLabelStyle}"/>
                                         <TextBox Text="{Binding ChatModelName, UpdateSourceTrigger=PropertyChanged}"
                                                  Style="{StaticResource TextBoxStyle}" ToolTip="qwen-plus, qwen-max 等" Margin="0,0,0,4"/>
@@ -1758,8 +1780,30 @@
                                         <TextBox Text="{Binding EditApiEndpoint, UpdateSourceTrigger=PropertyChanged}"
                                                  Style="{StaticResource TextBoxStyle}" Margin="0,0,0,10"/>
                                         <TextBlock Text="API 密钥" Style="{StaticResource FormLabelStyle}"/>
-                                        <TextBox Text="{Binding EditApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource TextBoxStyle}" Margin="0,0,0,10"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <PasswordBox x:Name="EditApiKeyBox"
+                                                         PasswordChanged="EditApiKeyBox_PasswordChanged"
+                                                         PasswordChar="●"
+                                                         Padding="10,6" FontSize="13"
+                                                         Background="White"
+                                                         BorderBrush="#CBD5E1"
+                                                         BorderThickness="2"/>
+                                            <TextBox x:Name="EditApiKeyTextBox"
+                                                     Text="{Binding EditApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                     Padding="10,6" FontSize="13"
+                                                     Background="White"
+                                                     BorderBrush="#CBD5E1"
+                                                     BorderThickness="2"
+                                                     Visibility="Collapsed"/>
+                                            <Button Grid.Column="1" Content="👁" Width="36" Height="36"
+                                                    Margin="4,0,0,0" Padding="4" FontSize="14"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Click="ToggleEditApiKeyVisibility_Click"/>
+                                        </Grid>
                                         <TextBlock Text="模型名称" Style="{StaticResource FormLabelStyle}"/>
                                         <TextBox Text="{Binding EditModelName, UpdateSourceTrigger=PropertyChanged}"
                                                  Style="{StaticResource TextBoxStyle}" ToolTip="wanx2.0-t2i-turbo 等" Margin="0,0,0,10"/>
