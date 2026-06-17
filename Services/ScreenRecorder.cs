@@ -150,7 +150,7 @@ public class ScreenRecorder : IDisposable
             var path = frameFiles[i];
             if (ct.IsCancellationRequested) break;
 
-            status?.Report($"正在逐帧增强（{methodName}）... {i + 1}/{total}");
+            status?.Report($"增强中... {i + 1}/{total}");
 
             try
             {
@@ -173,32 +173,35 @@ public class ScreenRecorder : IDisposable
                     continue;
                 }
 
-                // 回退实时方法（线性拉伸等）
-                using var src = new System.Drawing.Bitmap(path);
-                int w = src.Width, h = src.Height;
-                var data = src.LockBits(
-                    new System.Drawing.Rectangle(0, 0, w, h),
-                    System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                int stride = data.Stride;
-                byte[] pixels = new byte[stride * h];
-                Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
-                src.UnlockBits(data);
+                // 回退实时方法（线性拉伸等）—— 用 WPF 避免 GDI+ ExternalException
+                var bmp2 = new System.Windows.Media.Imaging.BitmapImage();
+                bmp2.BeginInit();
+                bmp2.UriSource = new Uri(path);
+                bmp2.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bmp2.EndInit();
+                bmp2.Freeze();
 
-                byte[] enhanced2 = _enhancer!.Enhance(pixels, w, h, stride, _enhancerParams);
+                int w2 = bmp2.PixelWidth, h2 = bmp2.PixelHeight, stride2 = w2 * 4;
+                byte[] pixels2 = new byte[stride2 * h2];
+                bmp2.CopyPixels(pixels2, stride2, 0);
 
-                using var outBmp = new System.Drawing.Bitmap(w, h,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                var outData = outBmp.LockBits(
-                    new System.Drawing.Rectangle(0, 0, w, h),
-                    System.Drawing.Imaging.ImageLockMode.WriteOnly,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                for (int y = 0; y < h; y++)
-                    Marshal.Copy(enhanced2, y * stride, outData.Scan0 + y * outData.Stride, outData.Stride);
-                outBmp.UnlockBits(outData);
-                outBmp.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+                byte[] enhanced2 = _enhancer!.Enhance(pixels2, w2, h2, stride2, _enhancerParams);
+
+                var result2 = System.Windows.Media.Imaging.BitmapSource.Create(
+                    w2, h2, 96, 96,
+                    System.Windows.Media.PixelFormats.Bgra32, null, enhanced2, stride2);
+                var encoder2 = new System.Windows.Media.Imaging.JpegBitmapEncoder
+                {
+                    QualityLevel = 92
+                };
+                encoder2.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(result2));
+                using var stream2 = new FileStream(path, FileMode.Create);
+                encoder2.Save(stream2);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"录屏帧增强失败: {ex.Message}");
+            }
         }
     }
 

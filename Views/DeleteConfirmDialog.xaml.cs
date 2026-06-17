@@ -21,8 +21,11 @@ namespace MediaEnhancer.Views
         public DeleteConfirmDialog(MediaFile file)
         {
             InitializeComponent();
-            TitleText.Text = $"确定要删除「{file.Title}」吗？";
-            FileText.Text = $"路径：{file.FilePath}";
+            NameText.Text = file.Title;
+            var path = file.FilePath;
+            if (path.Length > 80)
+                path = path[..35] + "..." + path[^42..];
+            FileText.Text = path;
         }
 
         /// <summary>

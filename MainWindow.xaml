@@ -1190,11 +1190,6 @@
                                                    Visibility="{Binding EnhancedRecording, Converter={StaticResource BoolToVisibilityConverter}}">
                                             💡 增强算法在「离线增强」页面中设置，当前方法：<Run Text="{Binding SelectedOfflineMethodName, Mode=OneWay}" FontWeight="SemiBold"/>
                                         </TextBlock>
-                                        <TextBlock FontSize="11" Foreground="#D97706"
-                                                   Margin="20,2,0,0" TextWrapping="Wrap"
-                                                   Visibility="{Binding IsOnnxRealtimeMethod, Converter={StaticResource BoolToVisibilityConverter}}">
-                                            ⚠ 当前实时方法为 ONNX 深度学习模型，增强录制帧率较低、可能掉帧。如需流畅录制建议切换为「线性拉伸」。
-                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
 
@@ -1978,6 +1973,49 @@
                                                 </TextBlock.Style>
                                             </TextBlock>
                                         </Border>
+
+                                        <!-- 线性拉伸参数（仅选中时显示） -->
+                                        <Border Style="{StaticResource CardStyle}"
+                                                Visibility="{Binding IsLinearStretchSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <StackPanel>
+                                                <TextBlock Text="参数调节" Style="{StaticResource SectionTitleStyle}"/>
+
+                                                <TextBlock Text="对比度强度" FontSize="13" Foreground="#475569" Margin="0,0,0,4"/>
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="40"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider Grid.Column="0"
+                                                            Value="{Binding LinearStretch.Contrast}"
+                                                            Minimum="0.5" Maximum="2.0"
+                                                            TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                                            Margin="0,0,8,0"/>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding LinearStretch.Contrast, StringFormat=F1}"
+                                                               FontSize="13" Foreground="#475569"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
+
+                                                <TextBlock Text="亮度偏移" FontSize="13" Foreground="#475569" Margin="0,0,0,4"/>
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="40"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider Grid.Column="0"
+                                                            Value="{Binding LinearStretch.Brightness}"
+                                                            Minimum="-50" Maximum="50"
+                                                            TickFrequency="1" IsSnapToTickEnabled="True"
+                                                            Margin="0,0,8,0"/>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding LinearStretch.Brightness, StringFormat=F0}"
+                                                               FontSize="13" Foreground="#475569"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

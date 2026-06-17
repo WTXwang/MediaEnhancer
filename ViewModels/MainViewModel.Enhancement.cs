@@ -60,9 +60,10 @@ partial class MainViewModel
         public List<string> EnhancementMethods => _registry.RealTimeMethodNames.ToList();
 
         /// <summary>
-        /// 当前是否选择了带可调参数的方法（控制参数滑块区的显隐）。
+        /// 当前是否选择了带可调参数的方法（实时页或离线页选中线性拉伸时显示参数滑块）。
         /// </summary>
-        public bool IsLinearStretchSelected => _selectedMethod == "线性拉伸";
+        public bool IsLinearStretchSelected =>
+            _selectedMethod == "线性拉伸" || _selectedOfflineMethodName == "线性拉伸";
 
         /// <summary>
         /// 当前实时方法是否可用（始终为 true，因为下拉只列实时方法）。
@@ -72,7 +73,6 @@ partial class MainViewModel
         partial void OnSelectedMethodChanged(string value)
         {
             _registry.SetCurrent(value);
-            OnPropertyChanged(nameof(IsOnnxRealtimeMethod));
             RefreshPreview();
         }
 
@@ -100,6 +100,7 @@ partial class MainViewModel
         /// 离线增强选中的方法名称（下拉框绑定，含全部方法）。
         /// </summary>
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsLinearStretchSelected))]
         private string _selectedOfflineMethodName = "线性拉伸";
 
         /// <summary>
@@ -441,10 +442,13 @@ partial class MainViewModel
                     return;
                 }
 
-                // 使用离线增强方法选择器中的方法（而非实时方法）
+                // 使用离线增强方法选择器中的方法
                 var offlineMethod = GetSelectedOfflineMethod();
-                var method = (offlineMethod as IRealTimeEnhancer) ?? (IRealTimeEnhancer)LinearStretch;
-                var methodName = offlineMethod?.Name ?? "线性拉伸";
+                var isLinear = offlineMethod?.Name == "线性拉伸" || offlineMethod == null;
+                // 线性拉伸用 ViewModel 实例（含 UI 滑块当前值），其他方法用注册表实例
+                var method = isLinear ? (IRealTimeEnhancer)LinearStretch
+                    : (offlineMethod as IRealTimeEnhancer) ?? (IRealTimeEnhancer)LinearStretch;
+                var methodName = isLinear ? "线性拉伸" : offlineMethod?.Name ?? "线性拉伸";
 
                 IsEnhancing = true;
                 _enhanceCts = new CancellationTokenSource();
@@ -452,7 +456,7 @@ partial class MainViewModel
                 try
                 {
                     var eParams = new Dictionary<string, double>();
-                    foreach (var p in method.Parameters)
+                    foreach (var p in LinearStretch.Parameters)
                         eParams[p.Key] = p.Value;
                     var enhancer = new VideoEnhancer(method, eParams);
                     var saveDir = EnhancementSavePath;
@@ -460,7 +464,12 @@ partial class MainViewModel
 
                     EnhanceProgress = $"正在用 {methodName} 增强视频...";
                     var progress = new Progress<(int current, int total)>(p =>
-                        EnhanceProgress = $"正在增强视频... {p.current}/{p.total} 帧（{methodName}）");
+                    {
+                        if (p.current < 0)
+                            EnhanceProgress = $"⚠ 第 {-p.current} 帧增强失败，详见输出窗口";
+                        else
+                            EnhanceProgress = $"正在增强视频... {p.current}/{p.total} 帧（{methodName}）";
+                    });
 
                     var outputPath = await enhancer.EnhanceAsync(file.FilePath, saveDir, progress,
                         _enhanceCts.Token);
@@ -475,8 +484,13 @@ partial class MainViewModel
 
                     if (outputPath == null)
                     {
-                        MessageBox.Show("视频增强失败，请确保 ffmpeg.exe 已下载。",
-                            "增强失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        var msg = "视频增强失败。\n\n" +
+                            "可能原因：\n" +
+                            "1. ffmpeg.exe 未下载（数据统计 → 检查依赖）\n" +
+                            "2. ONNX 模型文件缺失\n" +
+                            "3. 视频解码失败\n\n" +
+                            "请打开 Visual Studio 输出窗口查看详细错误信息。";
+                        MessageBox.Show(msg, "增强失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
@@ -677,12 +691,6 @@ partial class MainViewModel
         private string _recordingStatus = "就绪";
 
         /// <summary>
-        /// 当前实时方法是否为 ONNX（速度较慢，录制可能掉帧）。
-        /// </summary>
-        public bool IsOnnxRealtimeMethod =>
-            _registry.Current?.Name.Contains("Nano") == true;
-
-        /// <summary>
         /// 是否启用增强录制（录制时同步增强画面）。
         /// </summary>
         [ObservableProperty]
@@ -709,12 +717,14 @@ partial class MainViewModel
 
             if (EnhancedRecording)
             {
-                // 离线方法优先（后处理增强，不限实时性）
                 var offline = GetSelectedOfflineMethod();
                 if (offline is IOnnxEnhancement onnx)
                     offlineEnhancer = onnx;
-                // 实时方法作为回退
-                enhancer = _registry.Current;
+                else if (offline is IRealTimeEnhancer rt)
+                    enhancer = rt;
+                else
+                    enhancer = LinearStretch; // 兜底
+
                 var dict = new Dictionary<string, double>();
                 foreach (var p in LinearStretch.Parameters) dict[p.Key] = p.Value;
                 eParams = dict;

@@ -66,47 +66,58 @@ public class VideoEnhancer
                 try { File.Delete(audioPath); } catch { }
             }
 
-            // 3. 逐帧增强
+            // 3. 逐帧增强（WPF 原生解码/编码，不用 GDI+避免 ExternalException）
             var total = frameFiles.Count;
+            string? firstError = null;
 
-            await Task.Run(() =>
+            for (int i = 0; i < total; i++)
             {
-                for (int i = 0; i < total; i++)
+                if (ct.IsCancellationRequested) break;
+
+                try
                 {
-                    if (ct.IsCancellationRequested) break;
+                    // WPF 加载 JPEG（UI 线程安全）
+                    var bmp = new System.Windows.Media.Imaging.BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(frameFiles[i]);
+                    bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bmp.EndInit();
+                    bmp.Freeze();
 
-                    try
+                    int w = bmp.PixelWidth, h = bmp.PixelHeight, stride = w * 4;
+                    byte[] pixels = new byte[stride * h];
+                    bmp.CopyPixels(pixels, stride, 0);
+
+                    // 增强计算扔到线程池
+                    byte[] enhanced = await Task.Run(() =>
+                        _enhancer.Enhance(pixels, w, h, stride, _parameters), ct);
+
+                    // WPF 保存 JPEG
+                    var result = System.Windows.Media.Imaging.BitmapSource.Create(
+                        w, h, 96, 96,
+                        System.Windows.Media.PixelFormats.Bgra32, null, enhanced, stride);
+                    var encoder = new System.Windows.Media.Imaging.JpegBitmapEncoder
                     {
-                        using var src = new System.Drawing.Bitmap(frameFiles[i]);
-                        int w = src.Width, h = src.Height;
-                        var data = src.LockBits(
-                            new System.Drawing.Rectangle(0, 0, w, h),
-                            System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        int stride = data.Stride;
-                        byte[] pixels = new byte[stride * h];
-                        System.Runtime.InteropServices.Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
-                        src.UnlockBits(data);
-
-                        byte[] enhanced = _enhancer.Enhance(pixels, w, h, stride, _parameters);
-
-                        using var outBmp = new System.Drawing.Bitmap(w, h,
-                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        var outData = outBmp.LockBits(
-                            new System.Drawing.Rectangle(0, 0, w, h),
-                            System.Drawing.Imaging.ImageLockMode.WriteOnly,
-                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        for (int y = 0; y < h; y++)
-                            System.Runtime.InteropServices.Marshal.Copy(enhanced, y * stride,
-                                outData.Scan0 + y * outData.Stride, outData.Stride);
-                        outBmp.UnlockBits(outData);
-                        outBmp.Save(frameFiles[i], System.Drawing.Imaging.ImageFormat.Jpeg);
-                    }
-                    catch { }
-
-                    progress?.Report((i + 1, total));
+                        QualityLevel = 92
+                    };
+                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(result));
+                    using var stream = new FileStream(frameFiles[i], FileMode.Create);
+                    encoder.Save(stream);
                 }
-            }, ct);
+                catch (Exception ex)
+                {
+                    firstError ??= ex.Message;
+                    Debug.WriteLine($"视频帧 {i} 增强失败: {ex.Message}");
+                    progress?.Report((-(i + 1), total)); // 负值表示失败，让 UI 显示错误
+                }
+
+                progress?.Report((i + 1, total));
+            }
+
+            if (firstError != null)
+            {
+                Debug.WriteLine($"有帧增强失败，但继续编码（已成功帧已保存）: {firstError}");
+            }
 
             if (ct.IsCancellationRequested) return null;
 

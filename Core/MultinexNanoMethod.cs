@@ -40,12 +40,14 @@ public class MultinexNanoMethod : IRealTimeEnhancer, IOnnxEnhancement
     public async Task<BitmapSource> EnhanceAsync(BitmapSource input)
     {
         EnsureSession();
+        // 在 UI 线程读取像素，避免 Task.Run 内访问 WPF 对象
+        int w = input.PixelWidth, h = input.PixelHeight, stride = w * 4;
+        byte[] pixels = new byte[stride * h];
+        input.CopyPixels(pixels, stride, 0);
+
         return await Task.Run(() =>
         {
-            int w = input.PixelWidth, h = input.PixelHeight, stride = w * 4;
-            byte[] pixels = new byte[stride * h];
-            input.CopyPixels(pixels, stride, 0);
-            var nchw = OnnxModelHelper.Preprocess(input);
+            var (nchw, _, _, _, _, _) = OnnxModelHelper.Preprocess(pixels, w, h, stride, 0);
             var result = OnnxModelHelper.RunInference(_session!, nchw, h, w);
             return OnnxModelHelper.Postprocess(result, h, w);
         });
