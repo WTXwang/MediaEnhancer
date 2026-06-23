@@ -21,14 +21,14 @@ namespace MediaEnhancer.Core
             {
                 try
                 {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = new Uri(filePath);
+                    var bitmap = new BitmapImage();                 // 创建空文件
+                    bitmap.BeginInit();                             // 进入配置模式
+                    bitmap.UriSource = new Uri(filePath);           // 加载文件
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;  // 加载后立即释放文件
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache; //忽略缓存
                     bitmap.DecodePixelWidth = 400;  // 限制最大宽度，节省内存
-                    bitmap.EndInit();
-                    bitmap.Freeze();  // 跨线程安全
+                    bitmap.EndInit(); // 退出配置模式
+                    bitmap.Freeze();  // 冻结图片，跨线程安全
                     return bitmap;
                 }
                 catch

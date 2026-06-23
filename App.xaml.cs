@@ -21,30 +21,38 @@ namespace MediaEnhancer
             // 关键：阻止 Application 在 LoginWindow 关闭后自动退出
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+            // 让父类startup，启动xaml的资源
             base.OnStartup(e);
 
+            // 注册各类服务
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
 
+            // 用于获取服务的实例
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
             // 注册增强方法（ONNX 加载失败时静默跳过，不影响基础功能）
             var registry = ServiceProvider.GetRequiredService<EnhancementRegistry>();
-            registry.Register(new LinearStretchMethod()); // 纯 C# 实现，始终可用
-
+            // 纯 C# 实现，始终可用
+            registry.Register(new LinearStretchMethod()); 
+            // 尝试注册 ONNX 方法
             try { registry.Register(new MultinexNanoMethod()); }
             catch (Exception ex) { Debug.WriteLine($"MultinexNano 加载失败: {ex.Message}"); }
 
-            // ─── 确保数据库已迁移 ───
+            // 确保数据库已迁移
             using (var scope = ServiceProvider.CreateScope())
             {
+                // 在这个作用域里，DI 容器正常工作
                 var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            }
+                // ↑ 构造函数触发 → Database.Migrate() 跑完 → 数据库就位
+            }// using 结束 → ctx 被释放 → scope 被释放 ， 节省资源
 
             // ─── 登录流程 ───
+            // 从容器里拿出登录窗口
             var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+            // 用户不登录不往下走
             loginWindow.ShowDialog();
-
+            // 创建认证服务
             var authService = ServiceProvider.GetRequiredService<IAuthService>();
             if (!loginWindow.LoginSucceeded || authService.CurrentUser == null)
             {
@@ -60,6 +68,7 @@ namespace MediaEnhancer
                 System.Windows.MessageBoxImage.Information);
 
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+            // 触发关闭事件时，关闭软件
             mainWindow.Closed += (_, _) => Shutdown();
             mainWindow.Show();
 
@@ -67,6 +76,7 @@ namespace MediaEnhancer
             var thumbnailService = ServiceProvider.GetRequiredService<IThumbnailService>();
             _ = Task.Run(() => thumbnailService.CleanupOrphanedThumbnailsAsync());
         }
+
         // 依赖注入
         private void ConfigureServices(IServiceCollection services)
         {

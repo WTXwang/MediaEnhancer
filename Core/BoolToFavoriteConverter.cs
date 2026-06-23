@@ -15,7 +15,7 @@ namespace MediaEnhancer.Core
         /// </summary>
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool isFavorite)
+            if (value is bool isFavorite)  // 判断是不是布尔值，isFavorite 是一种模式匹配的写法，等价于 bool isFavorite=(bool)value
                 return isFavorite ? "⭐" : "☆";
             return "☆";
         }

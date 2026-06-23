@@ -22,6 +22,7 @@ namespace MediaEnhancer.Core
             {
                 try
                 {
+                    // 跟图片路径转换类似，只是尺寸变小了
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.UriSource = new Uri(path);
