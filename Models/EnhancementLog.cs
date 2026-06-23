@@ -24,14 +24,14 @@ namespace MediaEnhancer.Models
         public MediaFile MediaFile { get; set; } = null!;
 
         /// <summary>
-        /// 使用的增强方法名称（如 "线性拉伸"、"CLAHE" 等）。
+        /// 使用的增强方法名称（如 "线性拉伸"等）。
         /// </summary>
-        public string MethodName { get; set; }
+        public string MethodName { get; set; } = null!;
 
         /// <summary>
         /// 增强后输出文件的完整路径。
         /// </summary>
-        public string OutputPath { get; set; }
+        public string OutputPath { get; set; } = null!;
 
         /// <summary>
         /// 本次增强使用的参数（JSON 格式）。
@@ -44,10 +44,14 @@ namespace MediaEnhancer.Models
         /// </summary>
         public DateTime CreatedAt { get; set; }
 
-        /// <summary>归属用户 ID（外键）。</summary>
+        /// <summary>
+        /// 归属用户 ID（外键）。
+        /// </summary>
         public int UserId { get; set; }
 
-        /// <summary>导航属性：归属用户。</summary>
+        /// <summary>
+        /// 导航属性：归属用户。
+        /// </summary>
         public User? User { get; set; }
     }
 }

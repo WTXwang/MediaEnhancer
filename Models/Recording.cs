@@ -26,17 +26,17 @@ namespace MediaEnhancer.Models
         /// <summary>
         /// 录制文件的标题（默认为文件名不含扩展名）。
         /// </summary>
-        public string Title { get; set; }
+        public string Title { get; set; } = null!;
 
         /// <summary>
         /// 录制文件的完整路径。
         /// </summary>
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } =null!;
 
         /// <summary>
         /// 录制时长（字符串格式 "mm:ss"）。
         /// </summary>
-        public string Duration { get; set; }
+        public string Duration { get; set; } =null!;
 
         /// <summary>
         /// 录制文件大小（字节）。
@@ -44,7 +44,7 @@ namespace MediaEnhancer.Models
         public long FileSize { get; set; }
 
         /// <summary>
-        /// 获取人类可读的文件大小（不持久化）。
+        /// 进行单位换算（不持久化）。
         /// </summary>
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public string FileSizeDisplay => FileSize switch
@@ -62,8 +62,9 @@ namespace MediaEnhancer.Models
 
         /// <summary>
         /// 音频来源描述（"系统"、"麦克风"、"混合"、"无"）。
+        /// 因为没有实现音频录制，所以这里暂时是“无”
         /// </summary>
-        public string AudioSource { get; set; }
+        public string AudioSource { get; set; }=null!;
 
         /// <summary>
         /// 录制创建时间。

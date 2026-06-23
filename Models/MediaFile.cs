@@ -17,23 +17,22 @@ namespace MediaEnhancer.Models
         /// <summary>
         /// 获取或设置用户可见的文件标题（默认为文件名不含扩展名，可手动编辑）。
         /// </summary>
-        public string Title { get; set; }
+        public string Title { get; set; } = null!;
 
         /// <summary>
         /// 获取或设置媒体文件的完整本地路径（唯一索引，用于去重）。
         /// </summary>
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = null!;
 
         /// <summary>
-        /// 获取或设置媒体类型（"图片" 或 "视频"）。
-        /// 本项目不处理纯音频文件。
+        /// 获取或设置媒体类型（"图片" | "视频" | "音频"）。
         /// </summary>
-        public string Type { get; set; }
+        public string Type { get; set; } = null!;
 
         /// <summary>
         /// 获取或设置文件扩展名（如 ".jpg"、".mp4"），便于筛选和显示。
         /// </summary>
-        public string FileFormat { get; set; }
+        public string FileFormat { get; set; } = null!;
 
         /// <summary>
         /// 获取或设置文件大小（字节）。
@@ -41,7 +40,7 @@ namespace MediaEnhancer.Models
         public long FileSize { get; set; }
 
         /// <summary>
-        /// 获取人类可读的文件大小（如 "1.5 MB"），不持久化到数据库。
+        /// 进行单位换算，增强可读性，不持久化到数据库。
         /// </summary>
         [NotMapped]
         public string FileSizeDisplay => FileSize switch
@@ -53,17 +52,20 @@ namespace MediaEnhancer.Models
         };
 
         /// <summary>
-        /// 获取或设置画面宽度（像素）。图片可直接读取，视频可为 null。
+        /// 获取或设置画面宽度（像素）。
+        /// 图片可直接读取，视频可为 null。
         /// </summary>
         public int? Width { get; set; }
 
         /// <summary>
-        /// 获取或设置画面高度（像素）。图片可直接读取，视频可为 null。
+        /// 获取或设置画面高度（像素）。
+        /// 图片可直接读取，视频可为 null。
         /// </summary>
         public int? Height { get; set; }
 
         /// <summary>
-        /// 获取或设置视频时长（字符串格式 "hh:mm:ss"），图片为 null。
+        /// 获取或设置视频时长（字符串格式 "hh:mm:ss"），
+        /// 图片为 null。
         /// </summary>
         public string? Duration { get; set; }
 
@@ -97,7 +99,8 @@ namespace MediaEnhancer.Models
         public int PlayCount { get; set; }
 
         /// <summary>
-        /// 文件简介，初始值为文件类型名（"图片"/"视频"/"音频"），允许用户自由修改。
+        /// 文件简介
+        /// 初始值为文件类型名（"图片"/"视频"/"音频"），允许用户自由修改。
         /// </summary>
         public string? Description { get; set; }
 
@@ -117,10 +120,14 @@ namespace MediaEnhancer.Models
         /// </summary>
         public DateTime DateModified { get; set; }
 
-        /// <summary>归属用户 ID（外键）。</summary>
+        /// <summary>
+        /// 归属用户 ID（外键）。
+        /// </summary>
         public int UserId { get; set; }
 
-        /// <summary>导航属性：归属用户。</summary>
+        /// <summary>
+        /// 导航属性：归属用户。
+        /// </summary>
         public User? User { get; set; }
     }
 }

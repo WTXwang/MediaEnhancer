@@ -33,10 +33,14 @@ namespace MediaEnhancer.Models
         /// </summary>
         public double? PlayProgress { get; set; }
 
-        /// <summary>归属用户 ID（外键）。</summary>
+        /// <summary>
+        /// 归属用户 ID（外键）。
+        /// </summary>
         public int UserId { get; set; }
 
-        /// <summary>导航属性：归属用户。</summary>
+        /// <summary>
+        /// 导航属性：归属用户。
+        /// </summary>
         public User? User { get; set; }
     }
 }

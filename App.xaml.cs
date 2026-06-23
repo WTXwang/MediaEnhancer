@@ -12,9 +12,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MediaEnhancer
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
         public static ServiceProvider ServiceProvider { get; private set; }
@@ -70,7 +67,7 @@ namespace MediaEnhancer
             var thumbnailService = ServiceProvider.GetRequiredService<IThumbnailService>();
             _ = Task.Run(() => thumbnailService.CleanupOrphanedThumbnailsAsync());
         }
-
+        // 依赖注入
         private void ConfigureServices(IServiceCollection services)
         {
             // SQLite（使用 DbContextFactory 以支持 AuthService 等独立创建 context）
@@ -87,17 +84,17 @@ namespace MediaEnhancer
             // 认证服务（单例，保持登录会话）
             services.AddSingleton<IAuthService, AuthService>();
 
-            // 注册应用服务
+            // 注册应用服务（Scoped，针对每个窗口实例）
             services.AddScoped<IDataService, DataService>();
             services.AddScoped<IFileScanService, FileScanService>();
             services.AddScoped<IPlaybackService, PlaybackService>();
             services.AddScoped<IThumbnailService, ThumbnailService>();
 
-            // 注册 ViewModel
+            // 注册 ViewModel（Transient，每次请求新实例）
             services.AddTransient<MainViewModel>();
             services.AddTransient<LoginViewModel>();
 
-            // 注册 Window
+            // 注册 Window（Transient，每次请求新实例） - 注意：MainWindow 依赖 MainViewModel，LoginWindow 依赖 LoginViewModel
             services.AddTransient<MainWindow>();
             services.AddTransient<LoginWindow>();
         }
