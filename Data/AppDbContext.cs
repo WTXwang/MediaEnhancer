@@ -92,46 +92,50 @@ namespace MediaEnhancer.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
             // MediaFile：FilePath 唯一，防止重复导入
             modelBuilder.Entity<MediaFile>()
-                .HasIndex(m => m.FilePath)
-                .IsUnique();
+                .HasIndex(m => m.FilePath)          // 唯一索引
+                .IsUnique();                        // 唯一
 
             // MediaFile 自引用：增强文件 → 源文件（SourceFileId 可为 null）
             modelBuilder.Entity<MediaFile>()
-                .HasOne(m => m.SourceFile)
-                .WithMany()
-                .HasForeignKey(m => m.SourceFileId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(m => m.SourceFile)          // 对应一个外部文件
+                .WithMany()                         // 多对一
+                .HasForeignKey(m => m.SourceFileId) // 外键
+                .OnDelete(DeleteBehavior.SetNull);  // 来源删除时置空，保留增强文件
 
-            // PlayHistory → MediaFile 多对一关系
+            // MediaFile -> PlayHistory 一对多关系
             modelBuilder.Entity<PlayHistory>()
-                .HasOne(p => p.MediaFile)
-                .WithMany()
-                .HasForeignKey(p => p.MediaFileId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(p => p.MediaFile)           // 对应一个媒体文件
+                .WithMany()                         // 一对多 
+                .HasForeignKey(p => p.MediaFileId)  // 外键
+                .OnDelete(DeleteBehavior.Cascade);  // 级联删除
 
-            // EnhancementLog → MediaFile 多对一关系
+            // MediaFile -> EnhancementLog 一对多关系
             modelBuilder.Entity<EnhancementLog>()
-                .HasOne(e => e.MediaFile)
-                .WithMany()
-                .HasForeignKey(e => e.MediaFileId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(e => e.MediaFile)           // 对应一个媒体文件
+                .WithMany()                         // 一对多
+                .HasForeignKey(e => e.MediaFileId)  // 外键
+                .OnDelete(DeleteBehavior.Cascade);  // 级联删除
 
-            // Recording → MediaFile 一对一关系
+            // MediaFile -> Recording 一对一关系
             modelBuilder.Entity<Recording>()
-                .HasOne(r => r.MediaFile)
-                .WithMany()
-                .HasForeignKey(r => r.MediaFileId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(r => r.MediaFile)                       // 对应一个媒体文件
+                .WithOne()                                      // 一对一
+                .HasForeignKey<Recording>(r => r.MediaFileId)   // 外键
+                .OnDelete(DeleteBehavior.Cascade);              // 级联删除
 
-            // Favorite → MediaFile 多对一关系
+            // Recoding 中 MediaFileId 唯一
+            modelBuilder.Entity<Recording>()
+                .HasIndex(r => r.MediaFileId)
+                .IsUnique();
+            
+            // MediaFile -> Favorite 一对一关系
             modelBuilder.Entity<Favorite>()
-                .HasOne(f => f.MediaFile)
-                .WithMany()
-                .HasForeignKey(f => f.MediaFileId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(f => f.MediaFile)                   // 对应一个媒体文件
+                .WithOne()                                  // 一对一
+                .HasForeignKey<Favorite>(f => f.MediaFileId)// 外键
+                .OnDelete(DeleteBehavior.Cascade);          // 级联删除
 
             // Favorite 中 MediaFileId 唯一，一个文件只能收藏一次
             modelBuilder.Entity<Favorite>()
@@ -148,9 +152,9 @@ namespace MediaEnhancer.Data
             // User → MediaFile：一对多
             modelBuilder.Entity<MediaFile>()
                 .HasOne(m => m.User)
-                .WithMany()
-                .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .WithMany()                         // 一对一
+                .HasForeignKey(m => m.UserId)       // 外键
+                .OnDelete(DeleteBehavior.Cascade);  // 级联删除用户记录
 
             // 各关联表加 UserId 索引（加速按用户过滤）
             modelBuilder.Entity<MediaFile>()
@@ -164,14 +168,14 @@ namespace MediaEnhancer.Data
             modelBuilder.Entity<Favorite>()
                 .HasIndex(f => f.UserId);
 
-            // RealtimeSession → User
+            // User -> RealtimeSession
             modelBuilder.Entity<RealtimeSession>()
-                .HasOne(r => r.User)
-                .WithMany()
+                .HasOne(r => r.User)                
+                .WithMany()                         // 一对多
                 .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade);  // 级联删除
             modelBuilder.Entity<RealtimeSession>()
-                .HasIndex(r => r.UserId);
+                .HasIndex(r => r.UserId);      
         }
     }
 }
