@@ -156,7 +156,6 @@ namespace MediaEnhancer.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     MediaFileId = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    PlayProgress = table.Column<double>(type: "REAL", nullable: true),
                     UserId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -231,9 +230,9 @@ namespace MediaEnhancer.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MediaFiles_FilePath",
+                name: "IX_MediaFiles_FilePath_UserId",
                 table: "MediaFiles",
-                column: "FilePath",
+                columns: new[] { "FilePath", "UserId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -264,7 +263,8 @@ namespace MediaEnhancer.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Recordings_MediaFileId",
                 table: "Recordings",
-                column: "MediaFileId");
+                column: "MediaFileId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Recordings_UserId",

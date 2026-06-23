@@ -180,14 +180,13 @@ namespace MediaEnhancer.Services
         // 播放记录
         // ============================================================
 
-        public async Task AddPlayHistoryAsync(int mediaFileId, double? progress = null)
+        public async Task AddPlayHistoryAsync(int mediaFileId)
         {
             var history = new PlayHistory
             {
                 MediaFileId = mediaFileId,
                 UserId = EnsureUserId(),
-                PlayedAt = DateTime.Now,
-                PlayProgress = progress
+                PlayedAt = DateTime.Now
             };
             await _context.PlayHistories.AddAsync(history);
             await _context.SaveChangesAsync();

@@ -80,7 +80,7 @@ namespace MediaEnhancer.Services
         /// </summary>
         /// <param name="mediaFileId">媒体文件 ID。</param>
         /// <param name="progress">播放进度（百分比或秒数，可选）。</param>
-        Task AddPlayHistoryAsync(int mediaFileId, double? progress = null);
+        Task AddPlayHistoryAsync(int mediaFileId);
 
         /// <summary>
         /// 获取最近播放记录（含关联的 MediaFile 导航属性）。

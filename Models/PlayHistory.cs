@@ -29,11 +29,6 @@ namespace MediaEnhancer.Models
         public DateTime PlayedAt { get; set; }
 
         /// <summary>
-        /// 退出播放时的进度（百分比 0~100，或秒数），可为 null。
-        /// </summary>
-        public double? PlayProgress { get; set; }
-
-        /// <summary>
         /// 归属用户 ID（外键）。
         /// </summary>
         public int UserId { get; set; }

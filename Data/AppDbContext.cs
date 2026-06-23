@@ -45,7 +45,7 @@ namespace MediaEnhancer.Data
 
                     Database.ExecuteSqlRaw(
                         "INSERT OR IGNORE INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
-                        "VALUES ('20260610125846_InitialCreate', '10.0.0');");
+                        "VALUES ('20260623224701_InitialCreate', '10.0.0');");
                 }
                 catch { }
             }
@@ -92,10 +92,10 @@ namespace MediaEnhancer.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // MediaFile：FilePath 唯一，防止重复导入
+            // MediaFile：同用户内 FilePath 唯一，不同用户可有相同路径
             modelBuilder.Entity<MediaFile>()
-                .HasIndex(m => m.FilePath)          // 唯一索引
-                .IsUnique();                        // 唯一
+                .HasIndex(m => new { m.FilePath, m.UserId })
+                .IsUnique();
 
             // MediaFile 自引用：增强文件 → 源文件（SourceFileId 可为 null）
             modelBuilder.Entity<MediaFile>()

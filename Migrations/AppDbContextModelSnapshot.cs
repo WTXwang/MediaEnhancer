@@ -134,12 +134,12 @@ namespace MediaEnhancer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FilePath")
-                        .IsUnique();
-
                     b.HasIndex("SourceFileId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("FilePath", "UserId")
+                        .IsUnique();
 
                     b.ToTable("MediaFiles");
                 });
@@ -152,9 +152,6 @@ namespace MediaEnhancer.Migrations
 
                     b.Property<int>("MediaFileId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<double?>("PlayProgress")
-                        .HasColumnType("REAL");
 
                     b.Property<DateTime>("PlayedAt")
                         .HasColumnType("TEXT");
@@ -239,7 +236,8 @@ namespace MediaEnhancer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MediaFileId");
+                    b.HasIndex("MediaFileId")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -304,8 +302,8 @@ namespace MediaEnhancer.Migrations
             modelBuilder.Entity("MediaEnhancer.Models.Favorite", b =>
                 {
                     b.HasOne("MediaEnhancer.Models.MediaFile", "MediaFile")
-                        .WithMany()
-                        .HasForeignKey("MediaFileId")
+                        .WithOne()
+                        .HasForeignKey("MediaEnhancer.Models.Favorite", "MediaFileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -371,8 +369,8 @@ namespace MediaEnhancer.Migrations
             modelBuilder.Entity("MediaEnhancer.Models.Recording", b =>
                 {
                     b.HasOne("MediaEnhancer.Models.MediaFile", "MediaFile")
-                        .WithMany()
-                        .HasForeignKey("MediaFileId")
+                        .WithOne()
+                        .HasForeignKey("MediaEnhancer.Models.Recording", "MediaFileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
