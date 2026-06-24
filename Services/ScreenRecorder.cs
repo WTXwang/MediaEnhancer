@@ -62,6 +62,10 @@ public class ScreenRecorder : IDisposable
         _fps = Math.Clamp(fps, 1, 60);
     }
 
+    /// <summary>
+    /// 开始录制：创建帧目录 → 后台启动捕获循环。
+    /// 捕获循环在独立 Task 中运行，不阻塞 UI。
+    /// </summary>
     public void Start()
     {
         if (IsRecording) return;
@@ -69,6 +73,7 @@ public class ScreenRecorder : IDisposable
         _frameCount = 0;
         _startTime = DateTime.UtcNow;
 
+        // 创建输出目录和帧缓存目录（rec_{时间戳}_frames）
         Directory.CreateDirectory(_outputDir);
         _framesDir = Path.Combine(_outputDir, $"rec_{DateTime.Now:yyyyMMdd_HHmmss}_frames");
         Directory.CreateDirectory(_framesDir);
@@ -133,7 +138,8 @@ public class ScreenRecorder : IDisposable
 
     /// <summary>
     /// 对已保存的 JPEG 帧逐张执行增强，原地覆盖。
-    /// 优先使用离线 ONNX 方法（全分辨率异步），回退实时方法。
+    /// 优先使用离线 ONNX 方法（全分辨率、异步），回退实时方法（线性拉伸等）。
+    /// 帧 I/O 全部使用 WPF BitmapImage/JpegBitmapEncoder——避免 GDI+ ExternalException。
     /// </summary>
     private void EnhanceFrames(string framesDir, CancellationToken ct,
         IProgress<string>? status = null)
@@ -205,10 +211,16 @@ public class ScreenRecorder : IDisposable
         }
     }
 
+    /// <summary>
+    /// 录制循环（在后台 Task 中运行）。
+    /// 每帧：截图 → 存 JPEG。录制期间不做增强，保证帧率稳定。
+    /// </summary>
     private async Task RecordingLoop(CancellationToken ct)
     {
+        // 帧间隔：如 15fps → 1000/15 ≈ 66.7ms/帧
         var frameInterval = TimeSpan.FromMilliseconds(1000.0 / _fps);
 
+        // 优先 DXGI Desktop Duplication（GPU 零拷贝），失败回退 GDI
         using var capture = new DxgiScreenCapture();
         bool useDxgi = capture.Initialize();
         if (useDxgi) { _screenW = capture.Width; _screenH = capture.Height; }
@@ -223,9 +235,12 @@ public class ScreenRecorder : IDisposable
                 byte[]? pixels = null;
                 int stride = _screenW * 4;
 
+                // DXGI 捕获（GPU 零拷贝，性能最优）
                 if (useDxgi)
                     pixels = capture.CaptureFrame(maxWaitMs: (int)frameInterval.TotalMilliseconds);
 
+                // GDI 回退：DXGI 不可用时（无 GPU、驱动不支持、桌面锁定等）
+                // CopyFromScreen 从合成窗口缓冲区读取，兼容性好但性能较低
                 if (pixels == null)
                 {
                     using var bmp = new System.Drawing.Bitmap(_screenW, _screenH,
@@ -252,6 +267,8 @@ public class ScreenRecorder : IDisposable
                 if (_frameCount == 0) _firstFrameTime = now;
                 _lastFrameTime = now;
 
+                // 录制时不增强——增强移到停止后后处理阶段。
+                // 这样即使 ONNX 推理耗时 > 帧间隔，也不会掉帧。
                 SaveAsJpeg(pixels, _screenW, _screenH, stride,
                     Path.Combine(_framesDir!, $"{_frameCount:D8}.jpg"));
                 _frameCount++;
@@ -259,6 +276,7 @@ public class ScreenRecorder : IDisposable
             catch (OperationCanceledException) { break; }
             catch (Exception ex) { Debug.WriteLine($"帧异常: {ex.Message}"); }
 
+            // 帧率控制：计算剩余时间，>2ms 才 sleep（避免微秒级 sleep 的线程调度开销）
             var delay = frameInterval - (DateTime.UtcNow - frameStart);
             if (delay > TimeSpan.FromMilliseconds(2))
             {
@@ -268,12 +286,18 @@ public class ScreenRecorder : IDisposable
         }
     }
 
+    /// <summary>
+    /// FFmpeg 编码帧序列为 MP4。
+    /// 编码器五级降级链：NVENC → QSV → AMF → libx264 → mpeg4。
+    /// 硬件编码优先（低延迟、低 CPU），失败回退软件编码。
+    /// </summary>
     private async Task<bool> TryFfmpegAsync(string framesDir, string mp4Path, double realFps)
     {
         var ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
         if (!File.Exists(ffmpegPath)) { _errorMsg = "ffmpeg.exe 未找到。"; return false; }
 
         var framePattern = framesDir.Replace('\\', '/') + "/%08d.jpg";
+        // 1.NVENC(NVIDIA) → 2.QSV(Intel) → 3.AMF(AMD) → 4.libx264(CPU,兼容最好) → 5.mpeg4(最后兜底)
         var codecs = new[] { "h264_nvenc", "h264_qsv", "h264_amf", "libx264", "mpeg4" };
         var fpsStr = realFps.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
 

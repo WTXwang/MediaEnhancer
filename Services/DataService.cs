@@ -48,9 +48,14 @@ namespace MediaEnhancer.Services
                 .FirstOrDefaultAsync(m => m.Id == id && m.UserId == _userId);
         }
 
+        /// <summary>
+        /// 三维组合过滤：关键词（标题+路径模糊匹配）+ 类型（图片/视频/音频）+ 收藏。
+        /// 参数为 null 时跳过该维度，不过滤。type="全部" 亦不过滤。
+        /// </summary>
         public async Task<List<MediaFile>> SearchMediaFilesAsync(
             string? keyword, string? type, bool? favoritesOnly)
         {
+            // 以 UserId 为基础，逐条件叠加 Where（链式 IQueryable，EF 自动合并为一条 SQL）
             var query = _context.MediaFiles.Where(m => m.UserId == _userId);
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -109,8 +114,10 @@ namespace MediaEnhancer.Services
             if (newFiles.Count == 0)
                 return 0;
 
+            // 批量插入前统一设置 UserId
             foreach (var f in newFiles) f.UserId = uid;
 
+            // 分批提交，每 50 条一次 SaveChanges——平衡内存与数据库往返次数
             const int batchSize = 50;
             for (int i = 0; i < newFiles.Count; i += batchSize)
             {

@@ -5,8 +5,14 @@ using MediaEnhancer.Core;
 namespace MediaEnhancer.Services;
 
 /// <summary>
-/// 视频增强器：解帧 → 逐帧增强 → 合帧（含音轨）→ 输出 MP4。
-/// 支持 CancellationToken 取消。
+/// 视频增强器——四阶段管线：
+///   1. FFmpeg 解帧：视频 → JPEG 帧序列
+///   2. 提取音轨：从原视频提取 AAC 音频流
+///   3. 逐帧增强：WPF 加载 JPEG → 增强算法处理 → WPF 写回 JPEG
+///   4. FFmpeg 合帧：增强后的帧 + 原音轨 → 合成 MP4
+///
+/// 帧 I/O 使用 WPF（BitmapImage + JpegBitmapEncoder），避免 GDI+ ExternalException。
+/// 支持 CancellationToken 随时取消。
 /// </summary>
 public class VideoEnhancer
 {
