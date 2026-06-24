@@ -16,10 +16,6 @@
         <core:IndexToVisibilityConverter x:Key="IndexToVisibilityConverter" />
         <!-- 布尔值 ↔ 可见性转换器 -->
         <core:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <!-- 布尔值 ↔ 收藏图标转换器 -->
-        <core:BoolToFavoriteConverter x:Key="BoolToFavoriteConverter" />
-        <!-- 文件路径 → 不锁定的 BitmapImage -->
-        <core:FilePathToImageConverter x:Key="FilePathToImageConverter" />
         <!-- 缩略图路径 → BitmapImage -->
         <core:ThumbnailConverter x:Key="ThumbnailConverter" />
         <!-- Markdown 文本 → TextBlock -->

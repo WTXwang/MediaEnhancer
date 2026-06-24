@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace MediaEnhancer.Views;
+namespace MediaEnhancer.Services;
 
 /// <summary>
 /// 基于 DXGI Desktop Duplication 的屏幕捕获（纯 P/Invoke，无第三方依赖）

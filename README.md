@@ -24,7 +24,7 @@
 - **文件扫描与导入** — 递归扫描文件夹、多选导入，支持图片/视频/音频
 - **元数据提取** — 自动获取类型、时长、分辨率、文件大小等信息
 - **搜索筛选** — 关键词 + 类型 + 收藏 三维组合过滤
-- **收藏与标签** — 一键收藏/取消，支持批量操作，Favorites 表同步
+- **收藏管理** — 一键收藏/取消，支持批量操作，Favorites 表同步
 - **播放记录** — 自动记录播放时间，提供"最近播放"快捷入口
 - **文件校验** — 一键检查文件完整性，缺失文件可定位或删除
 
@@ -44,9 +44,9 @@
 - 鼠标穿透（`WS_EX_TRANSPARENT`），F11 全局热键退出
 - 独立方法选择下拉框，全屏按钮在离线方法选中时自动禁用
 
-### 🔧 离线增强（文件 / 批量 / 视频）
+### 🔧 离线增强（文件 / 视频）
 - 独立页面设置离线增强方法，可选全部方法
-- 详情面板一键增强、多选批量增强
+- 详情面板一键增强
 - 视频逐帧增强（FFmpeg 解帧 → 逐帧增强 → 合帧 + 音轨），支持取消
 - 增强文件自动入库，关联源文件（`SourceFileId`），参数持久化至日志
 
@@ -88,7 +88,6 @@
 | AI 集成 | OpenAI 兼容 API（通义千问 / DeepSeek / Ollama） |
 | 图像生成 | 通义万相 / SiliconFlow / OpenAI 兼容 |
 | API 密钥保护 | Windows DPAPI 加密存储 |
-| 测试框架 | xUnit + SQLite 内存库 |
 
 ---
 
@@ -207,12 +206,12 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 | 表 | 说明 | 主要字段 |
 |------|------|---------|
 | `Users` | 用户 | Username(唯一), PasswordHash, Salt |
-| `MediaFiles` | 媒体文件 | FilePath(唯一), UserId(FK), Type, FileFormat, FileSize, Width, Height, Duration, IsFavorite, SourceFileId, ThumbnailPath |
-| `PlayHistories` | 播放记录 | MediaFileId(FK), UserId, PlayedAt, PlayProgress |
+| `MediaFiles` | 媒体文件 | FilePath+UserId(复合唯一), Type, FileFormat, FileSize, Width, Height, Duration, IsFavorite, SourceFileId, ThumbnailPath |
+| `PlayHistories` | 播放记录 | MediaFileId(FK), UserId, PlayedAt |
 | `EnhancementLogs` | 增强日志 | MediaFileId(FK), UserId, MethodName, OutputPath, ParametersJson |
-| `Recordings` | 录屏记录 | MediaFileId(FK), UserId, Duration, IsEnhanced |
+| `Recordings` | 录屏记录 | MediaFileId(FK,唯一), UserId, Title, FilePath, Duration, FileSize, IsEnhanced, AudioSource |
 | `Favorites` | 收藏记录 | MediaFileId(FK,唯一), UserId, CreatedAt |
-| `RealtimeSessions` | 实时增强会话 | UserId, MethodName, StartedAt, StoppedAt |
+| `RealtimeSessions` | 实时增强会话 | UserId, MethodName, StartedAt, StoppedAt, DurationSeconds |
 
 ---
 
@@ -229,8 +228,13 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 ## 📝 文档
 
 - [项目需求说明书](./项目需求.md)
-- [项目总结](./Docs/项目总结.md)
+- [课程设计报告](./Docs/课程设计报告.md)
+- [设计文档](./Docs/设计文档.md)
+- [使用说明书](./Docs/使用说明书.md)
+- [安装说明](./Docs/安装说明.md)
+- [帮助文档](./Docs/帮助文档.md)
 - [开发总结](./Docs/开发总结.md)
+- [项目总结](./Docs/项目总结.md)
 - [录屏与实时增强技术总结](./Docs/录屏与实时增强技术总结.md)
 - [阶段性开发汇报与交接文档](./Docs/阶段性开发汇报与交接文档.md)
 

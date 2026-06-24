@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using MediaEnhancer.Core;
+using MediaEnhancer.Services;
 
 namespace MediaEnhancer.Views;
 

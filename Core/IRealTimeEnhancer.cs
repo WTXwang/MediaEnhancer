@@ -44,10 +44,5 @@ namespace MediaEnhancer.Core
         byte[] Enhance(byte[] pixels, int width, int height, int stride,
                        IReadOnlyDictionary<string, double>? parameters = null);
 
-        /// <summary>
-        /// 获取该方法可调参数的元数据。
-        /// 返回字典的键为参数 Key（如 "contrast"），值为参数描述。
-        /// </summary>
-        IReadOnlyDictionary<string, ParameterMeta> GetParameters();
     }
 }

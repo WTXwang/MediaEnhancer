@@ -20,9 +20,6 @@ public class MultinexNanoMethod : IRealTimeEnhancer, IOnnxEnhancement
 
     // IRealTimeEnhancer
     public bool SupportsRealTime => true; // 15K 参数，仅有的可实时推理的 ONNX 方法
-    public IReadOnlyDictionary<string, ParameterMeta> GetParameters() =>
-        new Dictionary<string, ParameterMeta>();
-
     public byte[] Enhance(byte[] pixels, int width, int height, int stride,
         IReadOnlyDictionary<string, double>? parameters = null)
     {

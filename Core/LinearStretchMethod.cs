@@ -83,38 +83,6 @@ namespace MediaEnhancer.Core
         }
 
         // ================================================================
-        // IRealTimeEnhancer.GetParameters() —— 自描述参数元数据
-        // ================================================================
-
-        /// <inheritdoc/>
-        public IReadOnlyDictionary<string, ParameterMeta> GetParameters()
-        {
-            return new Dictionary<string, ParameterMeta>
-            {
-                ["contrast"] = new ParameterMeta
-                {
-                    Key = "contrast",
-                    DisplayName = "对比度强度",
-                    Description = "拉伸比例的乘数，值越大对比度越强",
-                    DefaultValue = 1.0,
-                    MinValue = 0.5,
-                    MaxValue = 2.0,
-                    Step = 0.1
-                },
-                ["brightness"] = new ParameterMeta
-                {
-                    Key = "brightness",
-                    DisplayName = "亮度偏移",
-                    Description = "全局亮度调节，正值为增亮",
-                    DefaultValue = 0,
-                    MinValue = -50,
-                    MaxValue = 50,
-                    Step = 1
-                }
-            };
-        }
-
-        // ================================================================
         // IRealTimeEnhancer.Enhance(byte[]) —— 逐帧实时路径
         // ================================================================
 
