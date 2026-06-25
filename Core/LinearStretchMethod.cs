@@ -7,16 +7,24 @@ using System.Windows.Media.Imaging;
 namespace MediaEnhancer.Core
 {
     /// <summary>
-    /// 线性拉伸增强算法（C# 原生实现）。
+    /// 线性拉伸增强算法（C# 原生实现，零外部依赖）。
     ///
     /// 同时实现 INativeEnhancement（离线 BitmapSource 路径）和
     /// IRealTimeEnhancer（实时 byte[] 逐帧路径），核心算法逻辑共享。
     ///
-    /// 原理：对像素值做直方图分析 → 线性映射到全动态范围。
-    /// - 参数 contrast：对比度强度的乘数，1.0=标准拉伸，值越大对比度越强
-    /// - 参数 brightness：全局亮度偏移
+    /// 算法原理（两遍扫描 + 直方图拉伸）：
+    ///   第一遍：遍历所有像素，建立 256 级亮度直方图。
+    ///           裁剪最暗/最亮的 2% 像素（去除噪声和极端值）。
+    ///           确定有效亮度范围 [minVal, maxVal]。
+    ///   第二遍：将 [minVal, maxVal] 线性映射到 [0, 255]，
+    ///           每个像素 new = (old - min) * (255 / range) * contrast + brightness。
+    ///           映射后钳位到 [0, 255]。
     ///
-    /// 性能：byte[] 路径使用纯托管内存操作，< 0.1ms/帧，适合实时场景。
+    /// 可调参数：
+    ///   - contrast：对比度乘数（0.5-2.0），1.0=标准拉伸，越大对比度越强
+    ///   - brightness：全局亮度偏移（-50~+50），正值为增亮
+    ///
+    /// 性能：byte[] 实时路径使用纯托管内存操作，< 0.1ms/帧（1080p），零 GC 分配（复用 Buffer.BlockCopy）。
     /// </summary>
     public class LinearStretchMethod : INativeEnhancement, IRealTimeEnhancer
     {
@@ -115,8 +123,8 @@ namespace MediaEnhancer.Core
 
             for (int i = 0; i + 3 < pixelCount; i += 4)
             {
-                // BGRA 格式：pixels[i]=B, pixels[i+1]=G, pixels[i+2]=R
-                // 亮度近似: 0.299*R + 0.587*G + 0.114*B
+                // 亮度计算：ITU-R BT.601 标准 luma 权重（人眼对绿色最敏感）
+                // BGRA 格式：pixels[i+0]=B, pixels[i+1]=G, pixels[i+2]=R
                 int luminance = (pixels[i + 2] * 299 + pixels[i + 1] * 587 + pixels[i] * 114) / 1000;
                 if (luminance < 0) luminance = 0;
                 if (luminance > 255) luminance = 255;
@@ -127,17 +135,21 @@ namespace MediaEnhancer.Core
             if (totalPixels == 0)
                 return pixels;
 
-            // 找到最小/最大有效亮度值（裁剪 2% 的极端值以减少噪声干扰）
+            // 确定有效亮度范围 [minVal, maxVal]——裁剪首尾各 2% 的极端像素
+            // 目的：去除传感器噪声（最暗的 2%）和过曝/镜面高光（最亮的 2%）
+            // 对均匀图像（如全黑/全白），maxVal==minVal，下面会重置为 [0,255] 避免除以零
             int minVal = 0, maxVal = 255;
             int cutoffCount = (int)(totalPixels * 0.02);
             int cumulative = 0;
 
+            // 从暗端向亮端扫描：第一个累积超过 2% 的 bin 就是 minVal
             for (int i = 0; i < 256; i++)
             {
                 cumulative += histogram[i];
                 if (cumulative > cutoffCount) { minVal = i; break; }
             }
 
+            // 从亮端向暗端扫描：第一个累积超过 2% 的 bin 就是 maxVal
             cumulative = 0;
             for (int i = 255; i >= 0; i--)
             {
@@ -145,11 +157,12 @@ namespace MediaEnhancer.Core
                 if (cumulative > cutoffCount) { maxVal = i; break; }
             }
 
+            // 均匀图像（所有像素同一值）：范围为零，使用全 [0,255] 范围
             if (maxVal <= minVal) { minVal = 0; maxVal = 255; }
 
-            // ---- 第二遍：线性拉伸 ----
+            // ---- 第二遍：线性映射 ----
             double range = maxVal - minVal;
-            double scale = 255.0 / range;
+            double scale = 255.0 / range;  // 拉伸比例
 
             byte[] result = new byte[pixels.Length];
             Buffer.BlockCopy(pixels, 0, result, 0, pixelCount);

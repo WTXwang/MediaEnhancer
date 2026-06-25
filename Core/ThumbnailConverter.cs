@@ -22,14 +22,22 @@ namespace MediaEnhancer.Core
             {
                 try
                 {
-                    // 跟图片路径转换类似，只是尺寸变小了
+                    // 新建空bitmap
                     var bitmap = new BitmapImage();
+                    // 开始编辑
                     bitmap.BeginInit();
+                    // 从路径path中获取图像
                     bitmap.UriSource = new Uri(path);
+                    // 把整个图片加载到内存，不锁文件
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    // 跳过旧的缓存，防止改过的缩略图不可见
                     bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                    //限制缩略图尺寸
                     bitmap.DecodePixelWidth = 200;
+                    bitmap.DecodePixelHeight = 200;
+                    // 结束编辑
                     bitmap.EndInit();
+                    // 保证跨线程安全
                     bitmap.Freeze();
                     return bitmap;
                 }

@@ -9,6 +9,7 @@ namespace MediaEnhancer.Core;
 
 /// <summary>
 /// Markdown 文本 → FlowDocument 转换器（支持文本选择/复制）。
+/// 用于 AI 对话消息渲染
 /// </summary>
 public class MarkdownTextConverter : IValueConverter
 {
