@@ -225,21 +225,6 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 
 ---
 
-## 📝 文档
-
-- [项目需求说明书](./项目需求.md)
-- [课程设计报告](./Docs/课程设计报告.md)
-- [设计文档](./Docs/设计文档.md)
-- [使用说明书](./Docs/使用说明书.md)
-- [安装说明](./Docs/安装说明.md)
-- [帮助文档](./Docs/帮助文档.md)
-- [开发总结](./Docs/开发总结.md)
-- [项目总结](./Docs/项目总结.md)
-- [录屏与实时增强技术总结](./Docs/录屏与实时增强技术总结.md)
-- [阶段性开发汇报与交接文档](./Docs/阶段性开发汇报与交接文档.md)
-
----
-
 ## 🙏 致谢
 
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet)
